@@ -140,6 +140,20 @@ _STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
 
 
+# Force fresh fetches of HTML/JS/CSS so the iframed tabs always pick up the
+# latest edits. Without this, browsers happily serve stale tab HTML out of
+# disk cache even when the user hard-refreshes the parent shell.
+@app.middleware("http")
+async def _no_cache_static(request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path.startswith("/static/") or path == "/":
+        response.headers["Cache-Control"] = "no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+
 @app.get("/")
 async def root():
     return FileResponse(os.path.join(_STATIC_DIR, "index.html"))

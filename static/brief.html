@@ -152,11 +152,17 @@
   <span class="lens-title">Pulled from</span>
 </div>
 
-<!-- ─── PICKER (when nothing pinned) ─── -->
-<div id="pickerWrap" class="picker">
-  <div class="lbl">Choose an active crisis</div>
-  <select id="picker"><option value="">— select a crisis —</option></select>
-  <div class="hint">Pulled from the ACAPS INFORM Severity Index (April 2026). You can also click a country on the <b>Locate</b> map tab.</div>
+<!-- ─── EMPTY STATE (when nothing pinned) ─── -->
+<div id="emptyState" class="picker">
+  <div class="lbl">No conflict pinned yet</div>
+  <p style="font-size:.85rem;color:var(--ink);margin:8px 0 6px;line-height:1.55">
+    The Brief is a read-only synthesis. To populate it, start in
+    <a href="#map" onclick="try{window.parent.postMessage({type:'exodus:goto',tab:'map'},'*')}catch(e){};return false;" style="color:var(--accent);font-weight:600;text-decoration:none">01 Locate</a>,
+    click a circle on the map, and use the <b style="color:var(--accent)">📌 Pin this conflict</b> button.
+    Then refine the threat dimensions in <b>02 Assess</b> and the operational plan in <b>03 Plan</b>;
+    everything you set there flows into this brief automatically.
+  </p>
+  <div class="hint">All five models' outputs are aggregated here at the end — nothing is set up in this tab.</div>
 </div>
 
 <!-- ─── PIN HEADER (when pinned) ─── -->
@@ -170,37 +176,6 @@
     <span>INFORM <b id="pInform">—</b></span>
     <span>Severity <b id="pSev">—</b>/5</span>
     <span>Trend <b id="pTrend">—</b></span>
-  </div>
-  <button class="change" id="btnChange">Change</button>
-</div>
-
-<!-- ─── REFINE ─── -->
-<div id="refineWrap" hidden>
-  <h2>Inputs <span class="sub">tweak any value to recompute all three indices</span></h2>
-  <div class="refine">
-    <div class="f"><label>Population at risk</label><input id="rPop" type="number" min="1" value="100000"></div>
-    <div class="f"><label>Vulnerable %</label><input id="rVul" type="number" min="0" max="100" value="25"></div>
-    <div class="f"><label>Distance (km)</label><input id="rDist" type="number" min="1" value="120"></div>
-    <div class="f"><label>Planning days</label><input id="rDays" type="number" min="1" max="365" value="30"></div>
-    <div class="f"><label>Remaining %</label><input id="rRem" type="number" min="0" max="1" step="0.05" value="0.4"></div>
-    <div class="f"><label>Terrain</label>
-      <select id="rTer">
-        <option value="1">Urban / paved</option>
-        <option value="2">Mixed</option>
-        <option value="3" selected>Rural</option>
-        <option value="4">Mountainous</option>
-        <option value="5">Alpine / desert</option>
-      </select>
-    </div>
-    <div class="f"><label>Conflict pattern</label>
-      <select id="rPat">
-        <option value="1">Urban siege</option>
-        <option value="2">Enclave</option>
-        <option value="3">City conflict</option>
-        <option value="4">Regional</option>
-        <option value="5" selected>Auto</option>
-      </select>
-    </div>
   </div>
 </div>
 
@@ -353,60 +328,24 @@ const fmt = {
   pct: n => (n == null) ? "—" : Math.round(n) + "/100",
 };
 
-/* ─── Bootstrap: load all crises for picker ─── */
+/* ─── Bootstrap: load INFORM crises (for trend lookups; no picker) ─── */
 async function loadCrises() {
   try {
     const data = await fetch('/api/world-risk').then(r => r.json());
     crises = Object.values(data).sort((a,b) => (b.inform_score||0) - (a.inform_score||0));
-    const sel = document.getElementById('picker');
-    crises.forEach(c => {
-      const o = document.createElement('option');
-      o.value = c.iso3;
-      o.dataset.crisis = c.crisis || "";
-      o.dataset.name = c.name || c.iso3;
-      o.dataset.sev = c.sev || "";
-      o.dataset.score = c.inform_score || "";
-      o.dataset.trend = c.trend || "";
-      o.textContent = `${c.name} — ${c.crisis} · sev ${c.sev}`;
-      sel.appendChild(o);
-    });
-    sel.addEventListener('change', e => {
-      const iso3 = e.target.value;
-      if (!iso3) return;
-      const c = crises.find(x => x.iso3 === iso3);
-      if (c) {
-        // population suggestion = INFORM-driven heuristic if no value
-        const pop = guessPopulation(c);
-        applyContext({
-          iso3: c.iso3, country: c.name, crisis: c.crisis,
-          lat: c.lat, lng: c.lng,
-          informScore: c.inform_score, sev: c.sev,
-          ercfLevel: Math.max(0, Math.min(4, (c.sev||1)-1)),
-          population: pop,
-        });
-        // also tell the shell so other tabs share the pin
-        try { window.parent.postMessage({type:'exodus:pin', iso3:c.iso3, country:c.name, crisis:c.crisis, lat:c.lat, lng:c.lng, informScore:c.inform_score, sev:c.sev, ercfLevel:Math.max(0,Math.min(4,(c.sev||1)-1)), population: pop}, '*'); } catch(e){}
-      }
-    });
   } catch (e) {
-    showErr('Failed to load INFORM data: ' + e.message);
+    // Non-fatal — the trend column will just show '—'
   }
 }
 
-function guessPopulation(c) {
-  // Plausible "affected population" ladder by severity
-  return {5: 500000, 4: 200000, 3: 80000, 2: 25000, 1: 8000}[c.sev] || 100000;
-}
-
-/* ─── Apply a pin (from picker, shell, or another tab) ─── */
+/* ─── Apply a pin (from the shell or 01 Locate) — read-only display ─── */
 function applyContext(ctx) {
   context = ctx || {};
   const has = !!(context.iso3 || context.country);
   // Refresh which models have contributed — even when nothing pinned yet
   renderSynthStatus();
-  document.getElementById('pickerWrap').hidden = has;
+  document.getElementById('emptyState').hidden = has;
   document.getElementById('pinBar').hidden = !has;
-  document.getElementById('refineWrap').hidden = !has;
   if (!has) {
     document.getElementById('resultsWrap').hidden = true;
     return;
@@ -420,9 +359,6 @@ function applyContext(ctx) {
   // Inform-side trend (look it up in our crises cache, fallback to pinned context)
   const c = crises.find(x => x.iso3 === context.iso3);
   document.getElementById('pTrend').textContent  = (c && c.trend) || context.trend || '—';
-
-  // Prefill population & terrain heuristic
-  if (context.population) document.getElementById('rPop').value = context.population;
 
   runSynthesis();
 }
@@ -523,36 +459,25 @@ function tagLens(which) {
   el.appendChild(tag);
 }
 
-document.getElementById('btnChange').addEventListener('click', () => {
-  context = {};
-  applyContext({});
-  // also clear in the shell
-  try { window.parent.postMessage({type:'exodus:context'}, '*'); } catch(e) {}
-});
-
-/* ─── Recompute everything ─── */
-let _debounce = null;
-function scheduleRun() {
-  clearTimeout(_debounce);
-  _debounce = setTimeout(runSynthesis, 220);
-}
-['rPop','rVul','rDist','rDays','rRem','rTer','rPat'].forEach(id =>
-  document.getElementById(id).addEventListener('input', scheduleRun));
-
+/* ─── Synthesis call — inputs come from upstream 03 Plan if the analyst
+   has computed there, otherwise from sev-based heuristics. The Brief
+   itself never asks the user for inputs.                                */
 async function runSynthesis() {
   if (!context.iso3 && !context.country) return;
   document.getElementById('loadingWrap').hidden = false;
   document.getElementById('errWrap').hidden = true;
   try {
+    const u = readUpstreamState();
+    const guessPop = {5:500000, 4:200000, 3:80000, 2:25000, 1:8000}[context.sev] || 100000;
     const payload = {
       iso3: context.iso3 || null,
-      population:        +document.getElementById('rPop').value || 100000,
-      vulnerable_pct:    +document.getElementById('rVul').value || 25,
-      distance_km:       +document.getElementById('rDist').value || 120,
-      days:              +document.getElementById('rDays').value || 30,
-      remaining_pct:     +document.getElementById('rRem').value || 0.4,
-      terrain:           +document.getElementById('rTer').value || 3,
-      conflict_pattern:  +document.getElementById('rPat').value || 5,
+      population:        (u.plan && u.plan.population)      || context.population || guessPop,
+      vulnerable_pct:    (u.plan && u.plan.vulnerablePct)   || 25,
+      distance_km:       (u.plan && u.plan.distanceKm)      || 120,
+      days:              (u.plan && u.plan.days)            || 30,
+      remaining_pct:     (u.plan && u.plan.remainingPct)    || 0.4,
+      terrain:           (u.plan && u.plan.terrain)         || 3,
+      conflict_pattern:  (u.plan && u.plan.conflictPattern) || 5,
     };
     const r = await fetch('/api/synthesis', {
       method:'POST',
@@ -658,21 +583,25 @@ document.getElementById('btnRoutes').addEventListener('click',    gotoRoutes);
 document.getElementById('btnBehavior').addEventListener('click',  gotoBehavior);
 document.getElementById('btnRoutes2').addEventListener('click',   gotoRoutes);
 document.getElementById('btnBehavior2').addEventListener('click', gotoBehavior);
+// "Save as scenario" — pulls inputs from upstream 03 Plan state when present,
+// since the Brief no longer has its own input fields.
 document.getElementById('btnSave').addEventListener('click', async () => {
   if (!lastSynthesis || !context.iso3) return;
   const s = lastSynthesis;
   const d = s.dims_used;
+  const u = readUpstreamState();
+  const guessPop = {5:500000, 4:200000, 3:80000, 2:25000, 1:8000}[context.sev] || 100000;
   try {
     const r = await fetch('/api/scenarios', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         name: `${context.country} — ${context.crisis || 'brief'}`.slice(0,80),
         description: `Saved from Brief · ${s.recommendation.verdict}`,
-        population: +document.getElementById('rPop').value,
-        vulnerable_pct: +document.getElementById('rVul').value,
-        distance_km: +document.getElementById('rDist').value,
-        terrain: +document.getElementById('rTer').value,
-        conflict_pattern: +document.getElementById('rPat').value,
+        population:       (u.plan && u.plan.population)      || context.population || guessPop,
+        vulnerable_pct:   (u.plan && u.plan.vulnerablePct)   || 25,
+        distance_km:      (u.plan && u.plan.distanceKm)      || 120,
+        terrain:          (u.plan && u.plan.terrain)         || 3,
+        conflict_pattern: (u.plan && u.plan.conflictPattern) || 5,
         d1_kinetic: d.d1_kinetic, d2_vulnerability: d.d2_vulnerability,
         d3_political: d.d3_political, d4_logistics: d.d4_logistics,
         d5_destination: d.d5_destination, d6_urgency: d.d6_urgency, d7_information: d.d7_information,

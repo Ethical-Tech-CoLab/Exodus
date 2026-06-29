@@ -104,6 +104,17 @@
 </footer>
 
 <script>
+  /* ─── Cache-busting: every shell load assigns fresh src to each iframe.
+     Browsers were caching the old iframe HTML even after Cmd-Shift-R on the
+     parent, which is why edits sometimes didn't appear inside tabs.        */
+  (function(){
+    const v = Date.now();
+    document.querySelectorAll('iframe.frame').forEach(f => {
+      const base = f.getAttribute('src');
+      if (base) f.setAttribute('src', base + (base.includes('?') ? '&' : '?') + 'v=' + v);
+    });
+  })();
+
   /* ─── Tab routing ─── */
   const stepper = document.getElementById('nav');
   const frames = {
