@@ -1,0 +1,27 @@
+# Secrets
+.env
+.env.local
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.cache/
+.pytest_cache/
+
+# Runtime data
+evacuation_risk.db
+*.sqlite
+*.sqlite-journal
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Upstream sources for the behavioral / routes sims — not part of the
+# canonical Exodus deployment. These are kept locally as nested git repos.
+legacy/

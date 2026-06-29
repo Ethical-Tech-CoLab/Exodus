@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brief — Exodus</title>
+<link rel="stylesheet" href="/static/exodus.css">
+<style>
+  :root {
+    --bg:#0d1b2a; --bg2:#1a2d42; --bg3:#1e3450; --bg4:#243d5c;
+    --ink:#e8eef4; --muted:#a0b4c8; --border:#2a4060;
+    --purple:#7b2d8b; --purple2:#9b3dab; --accent:#c87dd4;
+    --green:#27ae60; --yellow:#f39c12; --orange:#e67e22; --red:#c0392b; --extreme:#8e44ad;
+    --blue:#2c7fb8; --teal:#1abc9c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--ink);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:13px;line-height:1.5}
+  body{padding:22px 26px 60px;max-width:1180px;margin:0 auto}
+
+  h1{font-size:1.45rem;font-weight:700;letter-spacing:.3px;margin-bottom:4px}
+  h1 small{font-size:.7rem;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:1.2px;display:block;margin-bottom:6px}
+  h2{font-size:.78rem;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin:24px 0 10px;font-weight:700}
+  h2 .sub{color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0;font-size:.78rem;margin-left:8px;font-style:italic}
+
+  .lede{color:var(--muted);font-size:.85rem;margin-bottom:18px;max-width:720px}
+
+  /* ─── Crisis picker ─── */
+  .picker{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:18px}
+  .picker .lbl{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:6px}
+  .picker select{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--ink);padding:10px 12px;border-radius:6px;font-size:.92rem;font-family:inherit;outline:none}
+  .picker select:focus{border-color:var(--purple2)}
+  .picker .hint{font-size:.72rem;color:var(--muted);margin-top:8px;font-style:italic}
+
+  /* ─── Pinned header ─── */
+  .pin-bar{display:flex;align-items:center;gap:14px;padding:14px 18px;background:linear-gradient(90deg,rgba(123,45,139,.18),rgba(123,45,139,.05) 70%);border:1px solid rgba(123,45,139,.5);border-radius:8px;margin-bottom:14px;flex-wrap:wrap}
+  .pin-bar .dot{width:12px;height:12px;background:var(--accent);border-radius:50%;box-shadow:0 0 10px rgba(200,125,212,.7)}
+  .pin-bar .nm{font-size:1.05rem;font-weight:700}
+  .pin-bar .nm .iso{background:rgba(155,61,171,.3);color:var(--accent);padding:2px 8px;border-radius:3px;font-size:.7rem;margin-left:6px;letter-spacing:.5px;vertical-align:2px}
+  .pin-bar .crisis{color:var(--muted);font-size:.85rem}
+  .pin-bar .meta{display:flex;gap:14px;margin-left:auto;font-size:.72rem;flex-wrap:wrap}
+  .pin-bar .meta span{color:var(--muted)}
+  .pin-bar .meta b{color:var(--ink)}
+  .pin-bar .change{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 11px;border-radius:5px;cursor:pointer;font-size:.72rem;font-family:inherit;font-weight:600}
+  .pin-bar .change:hover{color:var(--accent);border-color:var(--accent)}
+
+  /* ─── Refine row ─── */
+  .refine{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:16px}
+  .refine .f{display:flex;flex-direction:column;gap:3px}
+  .refine label{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600}
+  .refine input,.refine select{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--ink);padding:6px 8px;border-radius:5px;font-size:.85rem;font-family:inherit;outline:none}
+  .refine input:focus,.refine select:focus{border-color:var(--purple2)}
+
+  /* ─── Three-index reading ─── */
+  .triplet{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:6px}
+  @media(max-width:780px){.triplet{grid-template-columns:1fr}}
+  .lens{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;border-top:3px solid var(--border);position:relative}
+  .lens.l-inform{border-top-color:var(--blue)}
+  .lens.l-cerai{border-top-color:var(--teal)}
+  .lens.l-ercf{border-top-color:var(--accent)}
+  .lens .lh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .lens .src{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600}
+  .lens .nm{font-size:.95rem;font-weight:700;letter-spacing:.2px}
+  .lens .nm .by{color:var(--muted);font-weight:400;font-size:.7rem}
+  .lens .hero{font-size:2.1rem;font-weight:800;letter-spacing:-1px;line-height:1;margin:6px 0;font-variant-numeric:tabular-nums}
+  .lens .lbl{font-size:.72rem;color:var(--muted);margin-bottom:8px}
+  .lens .rows{font-size:.78rem;border-top:1px solid var(--border);padding-top:8px}
+  .lens .rows .r{display:flex;justify-content:space-between;padding:3px 0}
+  .lens .rows .r .k{color:var(--muted)}
+  .lens .rows .r .v{font-variant-numeric:tabular-nums}
+  .l-inform .hero{color:var(--blue)}
+  .l-cerai .hero{color:var(--teal)}
+  .l-ercf .hero{color:var(--accent)}
+
+  /* ─── Recommendation banner ─── */
+  .verdict{display:flex;align-items:center;gap:18px;padding:18px 22px;border-radius:10px;margin:18px 0;border:1px solid;flex-wrap:wrap}
+  .verdict.EVACUATE{background:rgba(192,57,43,.12);border-color:var(--red)}
+  .verdict.HOLD    {background:rgba(243,156,18,.12);border-color:var(--yellow)}
+  .verdict.PREPARE {background:rgba(230,126,34,.12);border-color:var(--orange)}
+  .verdict.MONITOR {background:rgba(39,174,96,.12);border-color:var(--green)}
+  .verdict .stamp{font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600;margin-bottom:4px}
+  .verdict .word{font-size:2.1rem;font-weight:900;letter-spacing:.5px;line-height:1}
+  .verdict.EVACUATE .word{color:var(--red)}
+  .verdict.HOLD     .word{color:var(--yellow)}
+  .verdict.PREPARE  .word{color:var(--orange)}
+  .verdict.MONITOR  .word{color:var(--green)}
+  .verdict .body{flex:1;min-width:280px;font-size:.88rem;color:var(--ink)}
+
+  /* ─── Cost comparison ─── */
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+  @media(max-width:680px){.compare{grid-template-columns:1fr}}
+  .col{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+  .col h3{font-size:.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:8px;font-weight:700}
+  .col .big{font-size:1.6rem;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+  .col .by{color:var(--muted);font-size:.72rem;margin-top:2px}
+  .col .row{display:flex;justify-content:space-between;font-size:.78rem;padding:4px 0;border-bottom:1px dotted var(--border)}
+  .col .row:last-child{border:none}
+  .col .row .v{font-variant-numeric:tabular-nums;color:var(--ink)}
+  .col .row .k{color:var(--muted)}
+
+  /* ─── Resources grid ─── */
+  .resgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:6px}
+  .res{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:9px 11px}
+  .res .k{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.7px}
+  .res .v{font-size:1.05rem;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums}
+
+  /* ─── Analogues ─── */
+  .ana-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:6px}
+  .ana{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;border-left:3px solid var(--purple2)}
+  .ana .yr{font-size:.7rem;color:var(--accent);font-weight:700;letter-spacing:.5px}
+  .ana .ttl{font-weight:600;font-size:.88rem;margin:3px 0 4px}
+  .ana .m{font-size:.72rem;color:var(--muted)}
+  .ana .obs{font-size:.74rem;color:var(--ink);margin-top:6px;border-top:1px dotted var(--border);padding-top:6px}
+  .ana .obs b{color:var(--muted);font-weight:500;text-transform:uppercase;font-size:.62rem;letter-spacing:.5px;display:block;margin-bottom:2px}
+
+  /* ─── Actions ─── */
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .actions button{background:linear-gradient(135deg,var(--purple),var(--purple2));border:none;color:#fff;padding:8px 14px;border-radius:5px;font-size:.76rem;font-weight:600;cursor:pointer;letter-spacing:.3px;font-family:inherit}
+  .actions button.ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+  .actions button.ghost:hover{color:var(--accent);border-color:var(--accent)}
+
+  .spin{padding:36px;text-align:center;color:var(--muted);font-style:italic}
+  .err{color:#e88;padding:14px;background:rgba(192,57,43,.1);border:1px solid var(--red);border-radius:6px;margin:12px 0}
+
+  /* ─── Synthesis status strip — shows which upstream models contributed ─── */
+  .lens-strip{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+  .lens-strip .lens-title{font-size:.62rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:700;margin-right:8px;align-self:center}
+  .lens-pip{display:inline-flex;align-items:center;gap:6px;font-size:.7rem;font-weight:600;padding:4px 10px;border-radius:14px;line-height:1}
+  .lens-pip small{opacity:.7;font-weight:500;font-size:.62rem}
+  .lens-pip.lens-on{background:rgba(155,61,171,.18);color:var(--accent);border:1px solid rgba(155,61,171,.4)}
+  .lens-pip.lens-off{background:rgba(160,180,200,.05);color:var(--muted);border:1px solid var(--border)}
+  .lens-card-src{display:inline-block;font-size:.58rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;background:rgba(155,61,171,.22);color:var(--accent);padding:2px 6px;border-radius:3px;margin-left:8px;vertical-align:1px}
+</style>
+</head>
+<body>
+
+<h1>
+  <small>Exodus · final synthesis</small>
+  Civilian evacuation brief
+</h1>
+<p class="lede">
+  The final step. This brief pulls together everything you set upstream in
+  <b>01 Locate</b>, <b>02 Assess</b>, <b>03 Plan</b>, <b>04 Routes</b>, and
+  <b>05 Behavior</b> — your live INFORM reading, CERAI endangerment / feasibility
+  scores, ERCF risk class with NATO STANAG mapping, destination readiness from
+  the Routes simulator, and household evacuation dynamics from Behavior — and
+  produces one verdict with the operational cost comparison, resource estimate,
+  and historical analogues.
+</p>
+
+<!-- ─── SYNTHESIS STATUS ─── -->
+<div id="synthStatus" class="lens-strip">
+  <span class="lens-title">Pulled from</span>
+</div>
+
+<!-- ─── PICKER (when nothing pinned) ─── -->
+<div id="pickerWrap" class="picker">
+  <div class="lbl">Choose an active crisis</div>
+  <select id="picker"><option value="">— select a crisis —</option></select>
+  <div class="hint">Pulled from the ACAPS INFORM Severity Index (April 2026). You can also click a country on the <b>Locate</b> map tab.</div>
+</div>
+
+<!-- ─── PIN HEADER (when pinned) ─── -->
+<div id="pinBar" class="pin-bar" hidden>
+  <span class="dot"></span>
+  <div>
+    <div class="nm"><span id="pName"></span><span class="iso" id="pIso"></span></div>
+    <div class="crisis" id="pCrisis"></div>
+  </div>
+  <div class="meta">
+    <span>INFORM <b id="pInform">—</b></span>
+    <span>Severity <b id="pSev">—</b>/5</span>
+    <span>Trend <b id="pTrend">—</b></span>
+  </div>
+  <button class="change" id="btnChange">Change</button>
+</div>
+
+<!-- ─── REFINE ─── -->
+<div id="refineWrap" hidden>
+  <h2>Inputs <span class="sub">tweak any value to recompute all three indices</span></h2>
+  <div class="refine">
+    <div class="f"><label>Population at risk</label><input id="rPop" type="number" min="1" value="100000"></div>
+    <div class="f"><label>Vulnerable %</label><input id="rVul" type="number" min="0" max="100" value="25"></div>
+    <div class="f"><label>Distance (km)</label><input id="rDist" type="number" min="1" value="120"></div>
+    <div class="f"><label>Planning days</label><input id="rDays" type="number" min="1" max="365" value="30"></div>
+    <div class="f"><label>Remaining %</label><input id="rRem" type="number" min="0" max="1" step="0.05" value="0.4"></div>
+    <div class="f"><label>Terrain</label>
+      <select id="rTer">
+        <option value="1">Urban / paved</option>
+        <option value="2">Mixed</option>
+        <option value="3" selected>Rural</option>
+        <option value="4">Mountainous</option>
+        <option value="5">Alpine / desert</option>
+      </select>
+    </div>
+    <div class="f"><label>Conflict pattern</label>
+      <select id="rPat">
+        <option value="1">Urban siege</option>
+        <option value="2">Enclave</option>
+        <option value="3">City conflict</option>
+        <option value="4">Regional</option>
+        <option value="5" selected>Auto</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div id="resultsWrap" hidden>
+
+  <!-- ─── THREE-INDEX READING ─── -->
+  <h2>Three-index reading</h2>
+  <div class="triplet">
+    <div class="lens l-inform">
+      <div class="lh"><div class="nm">INFORM <span class="by">· ACAPS / JRC</span></div><div class="src">Severity Index</div></div>
+      <div class="lbl">Composite crisis severity (0–10)</div>
+      <div class="hero" id="iScore">—</div>
+      <div class="rows">
+        <div class="r"><span class="k">Severity band</span><span class="v" id="iSev">—</span></div>
+        <div class="r"><span class="k">EII (stay ÷ leave)</span><span class="v" id="iEdi">—</span></div>
+        <div class="r"><span class="k">Trend</span><span class="v" id="iTrend">—</span></div>
+        <div class="r"><span class="k">Drivers</span><span class="v" id="iDrv" style="text-align:right;max-width:60%;font-size:.7rem">—</span></div>
+      </div>
+    </div>
+    <div class="lens l-cerai">
+      <div class="lh"><div class="nm">CERAI <span class="by">· Anticipation Index</span></div><div class="src">Endangerment / Feasibility</div></div>
+      <div class="lbl">Threat composite & route feasibility (0–100)</div>
+      <div class="hero" id="cE">—</div>
+      <div class="rows">
+        <div class="r"><span class="k">Endangerment</span><span class="v"><span id="cELbl">—</span></span></div>
+        <div class="r"><span class="k">Feasibility</span><span class="v"><b id="cF">—</b> · <span id="cFLbl">—</span></span></div>
+        <div class="r"><span class="k">Threat axis</span><span class="v" style="font-size:.7rem">D1 + D2 + D6</span></div>
+        <div class="r"><span class="k">Feasibility axis</span><span class="v" style="font-size:.7rem">D3 + D4 + D5 + D7</span></div>
+      </div>
+    </div>
+    <div class="lens l-ercf">
+      <div class="lh"><div class="nm">ERCF <span class="by">· NATO mapped</span></div><div class="src">Risk Class. Framework</div></div>
+      <div class="lbl">7-dimension weighted score (1–5)</div>
+      <div class="hero" id="eScore">—</div>
+      <div class="rows">
+        <div class="r"><span class="k">Risk level</span><span class="v"><b id="eLvl">—</b> · <span id="eLbl">—</span></span></div>
+        <div class="r"><span class="k">NATO STANAG</span><span class="v" id="eNato" style="font-size:.74rem">—</span></div>
+        <div class="r"><span class="k">Dominant dim</span><span class="v" id="eDom">—</span></div>
+        <div class="r"><span class="k">Weakest dim</span><span class="v" id="eWeak">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── VERDICT ─── -->
+  <div id="verdict" class="verdict" style="display:none">
+    <div>
+      <div class="stamp">Combined recommendation</div>
+      <div class="word" id="vWord">—</div>
+    </div>
+    <div class="body" id="vRationale">—</div>
+  </div>
+
+  <!-- ─── COST COMPARISON ─── -->
+  <h2>Cost comparison <span class="sub">over the planning horizon</span></h2>
+  <div class="compare">
+    <div class="col">
+      <h3>Stay</h3>
+      <div class="big" id="kStayTot">—</div>
+      <div class="by">total cost of the remaining population staying in zone</div>
+      <div style="margin-top:8px">
+        <div class="row"><span class="k">Cost / day</span><span class="v" id="kStayDay">—</span></div>
+        <div class="row"><span class="k">Expected casualties</span><span class="v" id="kStayCas">—</span></div>
+        <div class="row"><span class="k">Conflict type</span><span class="v" id="kStayCT" style="font-size:.78rem">—</span></div>
+      </div>
+    </div>
+    <div class="col">
+      <h3>Evacuate</h3>
+      <div class="big" id="kEvacTot">—</div>
+      <div class="by">grand total to move + shelter the population</div>
+      <div style="margin-top:8px">
+        <div class="row"><span class="k">Per person · transport</span><span class="v" id="kEvacTpp">—</span></div>
+        <div class="row"><span class="k">Transport total</span><span class="v" id="kEvacTrn">—</span></div>
+        <div class="row"><span class="k">Shelter (period)</span><span class="v" id="kEvacShel">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── RESOURCES ─── -->
+  <h2>Resources required <span class="sub">single-wave estimate</span></h2>
+  <div class="resgrid">
+    <div class="res"><div class="k">Buses</div><div class="v" id="resBus">—</div></div>
+    <div class="res"><div class="k">Ambulances</div><div class="v" id="resAmb">—</div></div>
+    <div class="res"><div class="k">Drivers</div><div class="v" id="resDrv">—</div></div>
+    <div class="res"><div class="k">Medics</div><div class="v" id="resMed">—</div></div>
+    <div class="res"><div class="k">Security</div><div class="v" id="resSec">—</div></div>
+    <div class="res"><div class="k">Coordinators</div><div class="v" id="resCoo">—</div></div>
+    <div class="res"><div class="k">Water (L)</div><div class="v" id="resWat">—</div></div>
+    <div class="res"><div class="k">Food (kg)</div><div class="v" id="resFood">—</div></div>
+    <div class="res"><div class="k">Diesel (L)</div><div class="v" id="resFuel">—</div></div>
+  </div>
+
+  <!-- ─── ANALOGUES ─── -->
+  <h2>Historical analogues <span class="sub">closest matches by risk level & population</span></h2>
+  <div class="ana-list" id="anaList"></div>
+
+  <!-- ─── WHAT-IF SIMULATORS ─── -->
+  <h2>What-if simulators <span class="sub">stress-test the plan with two interactive models</span></h2>
+  <div class="triplet" style="grid-template-columns:1fr 1fr">
+    <div class="lens l-cerai">
+      <div class="lh">
+        <div class="nm">Routes <span class="by">· India destinations</span></div>
+        <div class="src">Readiness & uncertainty</div>
+      </div>
+      <div class="lbl">Destination readiness under partial information</div>
+      <div style="font-size:.78rem;color:var(--muted);line-height:1.6;margin:6px 0 12px">
+        Greedy assignment, Monte Carlo over destination capacity / corridor blocking,
+        per-group urgency, and a tunable uncertainty slider. Read what changes when
+        you only know <i>some</i> facilities' status.
+      </div>
+      <button id="btnRoutes" class="ex-btn ex-btn--primary" style="width:100%;justify-content:center">Open in 04 Routes →</button>
+    </div>
+    <div class="lens l-ercf">
+      <div class="lh">
+        <div class="nm">Behavior <span class="by">· household agents</span></div>
+        <div class="src">Information & social influence</div>
+      </div>
+      <div class="lbl">Family-cluster evacuation dynamics</div>
+      <div style="font-size:.78rem;color:var(--muted);line-height:1.6;margin:6px 0 12px">
+        Agent-based model of family clusters going through
+        UNAWARE → SEEKING → MILLING → EVACUATING → DONE, with elders, young children,
+        info-source clarity, and neighbour social signals all delaying departure.
+      </div>
+      <button id="btnBehavior" class="ex-btn ex-btn--primary" style="width:100%;justify-content:center">Open in 05 Behavior →</button>
+    </div>
+  </div>
+
+  <!-- ─── ACTIONS ─── -->
+  <h2>Drill down</h2>
+  <div class="actions">
+    <button id="btnAssess">Open in 02 Assess (CERAI) →</button>
+    <button id="btnPlan">Open in 03 Plan (ERCF) →</button>
+    <button id="btnRoutes2">Open in 04 Routes →</button>
+    <button id="btnBehavior2">Open in 05 Behavior →</button>
+    <button class="ghost" id="btnSave">Save as scenario</button>
+  </div>
+
+</div>
+
+<div id="loadingWrap" class="spin" hidden>Computing synthesis…</div>
+<div id="errWrap" class="err" hidden></div>
+
+<script>
+let context = {};
+let lastSynthesis = null;
+let crises = [];
+
+const fmt = {
+  int: n => (n == null || Number.isNaN(n)) ? "—" : Math.round(n).toLocaleString(),
+  usd: n => (n == null || Number.isNaN(n)) ? "—" : "$" + Math.round(n).toLocaleString(),
+  pct: n => (n == null) ? "—" : Math.round(n) + "/100",
+};
+
+/* ─── Bootstrap: load all crises for picker ─── */
+async function loadCrises() {
+  try {
+    const data = await fetch('/api/world-risk').then(r => r.json());
+    crises = Object.values(data).sort((a,b) => (b.inform_score||0) - (a.inform_score||0));
+    const sel = document.getElementById('picker');
+    crises.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.iso3;
+      o.dataset.crisis = c.crisis || "";
+      o.dataset.name = c.name || c.iso3;
+      o.dataset.sev = c.sev || "";
+      o.dataset.score = c.inform_score || "";
+      o.dataset.trend = c.trend || "";
+      o.textContent = `${c.name} — ${c.crisis} · sev ${c.sev}`;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', e => {
+      const iso3 = e.target.value;
+      if (!iso3) return;
+      const c = crises.find(x => x.iso3 === iso3);
+      if (c) {
+        // population suggestion = INFORM-driven heuristic if no value
+        const pop = guessPopulation(c);
+        applyContext({
+          iso3: c.iso3, country: c.name, crisis: c.crisis,
+          lat: c.lat, lng: c.lng,
+          informScore: c.inform_score, sev: c.sev,
+          ercfLevel: Math.max(0, Math.min(4, (c.sev||1)-1)),
+          population: pop,
+        });
+        // also tell the shell so other tabs share the pin
+        try { window.parent.postMessage({type:'exodus:pin', iso3:c.iso3, country:c.name, crisis:c.crisis, lat:c.lat, lng:c.lng, informScore:c.inform_score, sev:c.sev, ercfLevel:Math.max(0,Math.min(4,(c.sev||1)-1)), population: pop}, '*'); } catch(e){}
+      }
+    });
+  } catch (e) {
+    showErr('Failed to load INFORM data: ' + e.message);
+  }
+}
+
+function guessPopulation(c) {
+  // Plausible "affected population" ladder by severity
+  return {5: 500000, 4: 200000, 3: 80000, 2: 25000, 1: 8000}[c.sev] || 100000;
+}
+
+/* ─── Apply a pin (from picker, shell, or another tab) ─── */
+function applyContext(ctx) {
+  context = ctx || {};
+  const has = !!(context.iso3 || context.country);
+  // Refresh which models have contributed — even when nothing pinned yet
+  renderSynthStatus();
+  document.getElementById('pickerWrap').hidden = has;
+  document.getElementById('pinBar').hidden = !has;
+  document.getElementById('refineWrap').hidden = !has;
+  if (!has) {
+    document.getElementById('resultsWrap').hidden = true;
+    return;
+  }
+  document.getElementById('pName').textContent = context.country || context.iso3 || '—';
+  document.getElementById('pIso').textContent  = context.iso3 || '—';
+  document.getElementById('pCrisis').textContent = context.crisis || '';
+  document.getElementById('pInform').textContent = context.informScore != null ? context.informScore + '/10' : '—';
+  document.getElementById('pSev').textContent    = context.sev || '—';
+
+  // Inform-side trend (look it up in our crises cache, fallback to pinned context)
+  const c = crises.find(x => x.iso3 === context.iso3);
+  document.getElementById('pTrend').textContent  = (c && c.trend) || context.trend || '—';
+
+  // Prefill population & terrain heuristic
+  if (context.population) document.getElementById('rPop').value = context.population;
+
+  runSynthesis();
+}
+
+/* ─── Cross-model state aggregator ─────────────────────────
+   Read live computed values from upstream tabs (sessionStorage)
+   and overlay them on the brief so the final synthesis reflects
+   the analyst's actual edits in 02 Assess and 03 Plan rather than
+   the synthesis API's defaults.                                  */
+function readUpstreamState() {
+  const r = k => { try { return JSON.parse(sessionStorage.getItem(k) || 'null'); } catch(_) { return null; } };
+  return {
+    assess: r('exodus.state.assess.v1'),
+    plan:   r('exodus.state.plan.v1'),
+  };
+}
+
+function fmtAge(iso) {
+  if (!iso) return '';
+  const t = new Date(iso); if (isNaN(t)) return '';
+  const sec = Math.floor((Date.now() - t.getTime()) / 1000);
+  if (sec < 60)   return 'just now';
+  if (sec < 3600) return Math.floor(sec/60)  + 'm ago';
+  if (sec < 86400)return Math.floor(sec/3600)+ 'h ago';
+  return Math.floor(sec/86400) + 'd ago';
+}
+
+function renderSynthStatus() {
+  const el = document.getElementById('synthStatus');
+  if (!el) return;
+  const u = readUpstreamState();
+  const items = [
+    { label:'01 Locate · EII',          live: !!(context && context.iso3), note: (context && context.iso3) ? '✓ pinned' : '— no pin' },
+    { label:'02 Assess · CERAI',        live: !!u.assess, note: u.assess ? ('✓ live · ' + fmtAge(u.assess.updatedAt)) : '— defaults' },
+    { label:'03 Plan · ERCF',           live: !!u.plan,   note: u.plan   ? ('✓ live · ' + fmtAge(u.plan.updatedAt))   : '— defaults' },
+    { label:'04 Routes · India',        live: false,      note: 'standalone sim' },
+    { label:'05 Behavior · Households', live: false,      note: 'standalone sim' },
+  ];
+  const inner = '<span class="lens-title">Pulled from</span>' +
+    items.map(it => `<span class="lens-pip ${it.live ? 'lens-on' : 'lens-off'}">${it.label} <small>${it.note}</small></span>`).join('');
+  el.innerHTML = inner;
+}
+
+function applyUpstreamOverrides() {
+  const u = readUpstreamState();
+
+  // CERAI override from 02 Assess
+  if (u.assess) {
+    const e = document.getElementById('cE');    if (e) e.textContent    = String(u.assess.endangerment);
+    const eL= document.getElementById('cELbl'); if (eL) eL.textContent = u.assess.endangermentLabel || '—';
+    const f = document.getElementById('cF');    if (f) f.textContent    = String(u.assess.feasibility);
+    const fL= document.getElementById('cFLbl'); if (fL) fL.textContent = u.assess.feasibilityLabel || '—';
+    tagLens('cerai');
+  }
+
+  // ERCF override from 03 Plan (risk + costs + resources)
+  if (u.plan) {
+    const eS = document.getElementById('eScore'); if (eS) eS.textContent = Number(u.plan.riskScore||0).toFixed(2);
+    const eLv= document.getElementById('eLvl');   if (eLv)eLv.textContent= String(u.plan.riskLevel);
+    const eLb= document.getElementById('eLbl');   if (eLb)eLb.textContent= u.plan.riskLabel || '—';
+    const eN = document.getElementById('eNato');  if (eN) eN.textContent = u.plan.natoEquivalent || '—';
+
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('kStayTot',  fmt.usd(u.plan.stayTotal));
+    set('kStayDay',  fmt.usd(u.plan.stayPerDay));
+    set('kStayCas',  (u.plan.stayCasualties || 0).toLocaleString());
+    set('kStayCT',   u.plan.conflictType || '—');
+    set('kEvacTot',  fmt.usd(u.plan.evacTotal));
+    set('kEvacTpp',  fmt.usd(u.plan.evacPerCapita));
+    set('kEvacTrn',  fmt.usd(u.plan.evacTransport));
+    set('kEvacShel', fmt.usd(u.plan.evacShelter));
+    const r = u.plan.resources;
+    if (r && r.vehicles && r.personnel && r.supplies) {
+      set('resBus',  fmt.int(r.vehicles.buses));
+      set('resAmb',  fmt.int(r.vehicles.ambulances));
+      set('resDrv',  fmt.int(r.personnel.drivers));
+      set('resMed',  fmt.int(r.personnel.medics));
+      set('resSec',  fmt.int(r.personnel.security));
+      set('resCoo',  fmt.int(r.personnel.coordinators));
+      set('resWat',  fmt.int(r.supplies.water_l));
+      set('resFood', fmt.int(r.supplies.food_kg));
+      set('resFuel', fmt.int(r.supplies.fuel_l));
+    }
+    tagLens('ercf');
+  }
+
+  renderSynthStatus();
+}
+
+// Add a small "from 0X" tag next to the CERAI / ERCF lens card titles
+function tagLens(which) {
+  const sel = which === 'cerai' ? '.l-cerai .lh .nm' : '.l-ercf .lh .nm';
+  const el = document.querySelector(sel);
+  if (!el || el.querySelector('.lens-card-src')) return;
+  const tag = document.createElement('span');
+  tag.className = 'lens-card-src';
+  tag.textContent = which === 'cerai' ? 'from 02 Assess' : 'from 03 Plan';
+  el.appendChild(tag);
+}
+
+document.getElementById('btnChange').addEventListener('click', () => {
+  context = {};
+  applyContext({});
+  // also clear in the shell
+  try { window.parent.postMessage({type:'exodus:context'}, '*'); } catch(e) {}
+});
+
+/* ─── Recompute everything ─── */
+let _debounce = null;
+function scheduleRun() {
+  clearTimeout(_debounce);
+  _debounce = setTimeout(runSynthesis, 220);
+}
+['rPop','rVul','rDist','rDays','rRem','rTer','rPat'].forEach(id =>
+  document.getElementById(id).addEventListener('input', scheduleRun));
+
+async function runSynthesis() {
+  if (!context.iso3 && !context.country) return;
+  document.getElementById('loadingWrap').hidden = false;
+  document.getElementById('errWrap').hidden = true;
+  try {
+    const payload = {
+      iso3: context.iso3 || null,
+      population:        +document.getElementById('rPop').value || 100000,
+      vulnerable_pct:    +document.getElementById('rVul').value || 25,
+      distance_km:       +document.getElementById('rDist').value || 120,
+      days:              +document.getElementById('rDays').value || 30,
+      remaining_pct:     +document.getElementById('rRem').value || 0.4,
+      terrain:           +document.getElementById('rTer').value || 3,
+      conflict_pattern:  +document.getElementById('rPat').value || 5,
+    };
+    const r = await fetch('/api/synthesis', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
+    const s = await r.json();
+    lastSynthesis = s;
+    render(s);
+    document.getElementById('resultsWrap').hidden = false;
+  } catch (e) {
+    showErr('Synthesis failed: ' + e.message);
+  } finally {
+    document.getElementById('loadingWrap').hidden = true;
+  }
+}
+
+function render(s) {
+  // INFORM
+  document.getElementById('iScore').textContent = (s.inform.inform_score || 0).toFixed ? (s.inform.inform_score||0).toFixed(1) : (s.inform.inform_score || '—');
+  document.getElementById('iSev').textContent   = s.inform.sev + ' / 5';
+  document.getElementById('iEdi').textContent   = s.inform.edi != null ? s.inform.edi.toFixed(2) : '—';
+  document.getElementById('iTrend').textContent = s.inform.trend || '—';
+  document.getElementById('iDrv').textContent   = s.inform.drivers || '—';
+
+  // CERAI
+  document.getElementById('cE').textContent    = s.cerai.endangerment.toFixed(0);
+  document.getElementById('cELbl').textContent = s.cerai.endangerment_label;
+  document.getElementById('cF').textContent    = s.cerai.feasibility.toFixed(0);
+  document.getElementById('cFLbl').textContent = s.cerai.feasibility_label;
+
+  // ERCF
+  document.getElementById('eScore').textContent = s.ercf.risk_score.toFixed(2);
+  document.getElementById('eLvl').textContent   = s.ercf.risk_level;
+  document.getElementById('eLbl').textContent   = s.ercf.risk_label;
+  document.getElementById('eNato').textContent  = s.ercf.nato_equivalent;
+  const dims = s.dims_used;
+  const dimEntries = Object.entries(dims);
+  const max = dimEntries.reduce((a,b) => b[1] > a[1] ? b : a);
+  const min = dimEntries.reduce((a,b) => b[1] < a[1] ? b : a);
+  document.getElementById('eDom').textContent  = `${max[0].split('_')[0].toUpperCase()} (${max[1].toFixed(1)})`;
+  document.getElementById('eWeak').textContent = `${min[0].split('_')[0].toUpperCase()} (${min[1].toFixed(1)})`;
+
+  // Verdict
+  const v = document.getElementById('verdict');
+  v.className = `verdict ${s.recommendation.verdict}`;
+  v.style.display = 'flex';
+  document.getElementById('vWord').textContent = s.recommendation.verdict;
+  document.getElementById('vRationale').textContent = s.recommendation.rationale;
+
+  // Cost
+  document.getElementById('kStayTot').textContent = fmt.usd(s.staying_cost.total_cost);
+  document.getElementById('kStayDay').textContent = fmt.usd(s.staying_cost.cost_per_day);
+  document.getElementById('kStayCas').textContent = (s.staying_cost.expected_casualties || 0).toLocaleString();
+  document.getElementById('kStayCT').textContent  = s.staying_cost.conflict_type;
+  document.getElementById('kEvacTot').textContent = fmt.usd(s.remaining_cost.total_cost);
+  document.getElementById('kEvacTpp').textContent = fmt.usd(s.remaining_cost.transport_per_capita);
+  document.getElementById('kEvacTrn').textContent = fmt.usd(s.remaining_cost.transport_total);
+  document.getElementById('kEvacShel').textContent= fmt.usd(s.remaining_cost.shelter_total);
+
+  // Resources
+  document.getElementById('resBus').textContent  = fmt.int(s.resources.vehicles.buses);
+  document.getElementById('resAmb').textContent  = fmt.int(s.resources.vehicles.ambulances);
+  document.getElementById('resDrv').textContent  = fmt.int(s.resources.personnel.drivers);
+  document.getElementById('resMed').textContent  = fmt.int(s.resources.personnel.medics);
+  document.getElementById('resSec').textContent  = fmt.int(s.resources.personnel.security);
+  document.getElementById('resCoo').textContent  = fmt.int(s.resources.personnel.coordinators);
+  document.getElementById('resWat').textContent  = fmt.int(s.resources.supplies.water_l);
+  document.getElementById('resFood').textContent = fmt.int(s.resources.supplies.food_kg);
+  document.getElementById('resFuel').textContent = fmt.int(s.resources.supplies.fuel_l);
+
+  // Analogues
+  document.getElementById('anaList').innerHTML = (s.analogues || []).map(a => `
+    <div class="ana">
+      <div class="yr">${a.year} · ${a.country}</div>
+      <div class="ttl">${a.case}</div>
+      <div class="m">Lvl ${a.ercf_level} · ${fmt.int(a.population_at_risk)} at risk · ${fmt.int(a.evacuated)} evacuated · ${a.duration_days}d</div>
+      <div class="obs"><b>Outcome</b>${a.outcomes}</div>
+    </div>`).join('') || '<div style="color:var(--muted);font-style:italic;font-size:.78rem">No close analogues in dataset.</div>';
+
+  // Overlay live values from upstream models so the final brief reflects
+  // the analyst's actual edits in 02 Assess and 03 Plan, not API defaults.
+  applyUpstreamOverrides();
+}
+
+function showErr(msg) {
+  const e = document.getElementById('errWrap');
+  e.textContent = msg;
+  e.hidden = false;
+}
+
+/* ─── Actions ─── */
+document.getElementById('btnAssess').addEventListener('click', () => {
+  try { window.parent.postMessage({type:'exodus:goto', tab:'assessment'}, '*'); } catch(e) {}
+});
+document.getElementById('btnPlan').addEventListener('click', () => {
+  try { window.parent.postMessage({type:'exodus:goto', tab:'scenario'}, '*'); } catch(e) {}
+});
+const gotoRoutes = () => { try { window.parent.postMessage({type:'exodus:goto', tab:'routes'},   '*'); } catch(e) {} };
+const gotoBehavior = () => { try { window.parent.postMessage({type:'exodus:goto', tab:'behavior'}, '*'); } catch(e) {} };
+document.getElementById('btnRoutes').addEventListener('click',    gotoRoutes);
+document.getElementById('btnBehavior').addEventListener('click',  gotoBehavior);
+document.getElementById('btnRoutes2').addEventListener('click',   gotoRoutes);
+document.getElementById('btnBehavior2').addEventListener('click', gotoBehavior);
+document.getElementById('btnSave').addEventListener('click', async () => {
+  if (!lastSynthesis || !context.iso3) return;
+  const s = lastSynthesis;
+  const d = s.dims_used;
+  try {
+    const r = await fetch('/api/scenarios', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        name: `${context.country} — ${context.crisis || 'brief'}`.slice(0,80),
+        description: `Saved from Brief · ${s.recommendation.verdict}`,
+        population: +document.getElementById('rPop').value,
+        vulnerable_pct: +document.getElementById('rVul').value,
+        distance_km: +document.getElementById('rDist').value,
+        terrain: +document.getElementById('rTer').value,
+        conflict_pattern: +document.getElementById('rPat').value,
+        d1_kinetic: d.d1_kinetic, d2_vulnerability: d.d2_vulnerability,
+        d3_political: d.d3_political, d4_logistics: d.d4_logistics,
+        d5_destination: d.d5_destination, d6_urgency: d.d6_urgency, d7_information: d.d7_information,
+      }),
+    });
+    if (!r.ok) throw new Error(r.status);
+    alert(`Saved scenario for ${context.country}.`);
+  } catch (e) {
+    alert('Save failed: ' + e.message);
+  }
+});
+
+/* ─── Shell integration: receive context, push pins ─── */
+window.addEventListener('message', (e) => {
+  const m = e.data;
+  if (m && m.type === 'exodus:context') applyContext(m.context || {});
+});
+try { window.parent.postMessage({type:'exodus:context.request'}, '*'); } catch(e) {}
+
+loadCrises();
+// Initial paint of the synthesis-status strip even before context arrives
+renderSynthStatus();
+</script>
+</body>
+</html>

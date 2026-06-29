@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exodus — Civilian Evacuation Risk Platform · NYU Ethical CoLab</title>
+<style>
+  :root {
+    --bg:#0d1b2a; --ink:#e8eef4; --muted:#a0b4c8;
+    --bar:#0a1422; --bar2:#1a2d42; --border:#2a4060;
+    --purple:#7b2d8b; --purple2:#9b3dab; --accent:#c87dd4;
+    --teal:#1abc9c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--ink);font-family:'Segoe UI',system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+  body{display:flex;flex-direction:column}
+
+  header{background:linear-gradient(135deg,#0d1b2a 0%,#1a1040 50%,#1a0d2e 100%);border-bottom:2px solid var(--purple);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{width:42px;height:42px;background:linear-gradient(135deg,var(--purple),var(--purple2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;color:#fff;letter-spacing:-1px}
+  .brand h1{font-size:1.25rem;font-weight:700;letter-spacing:.4px;line-height:1.1}
+  .brand .sub{font-size:.72rem;color:var(--muted);margin-top:2px}
+  .meta{text-align:right;font-size:.7rem;color:var(--muted)}
+  .badge{display:inline-block;background:rgba(123,45,139,.3);border:1px solid var(--purple);color:var(--accent);font-size:.68rem;padding:2px 9px;border-radius:14px;margin-bottom:3px}
+
+  nav{display:flex;background:var(--bar);border-bottom:1px solid var(--border);padding:0 8px;flex-wrap:wrap}
+  nav button{background:none;border:none;color:var(--muted);padding:13px 22px;font-size:.85rem;cursor:pointer;border-bottom:3px solid transparent;font-weight:600;letter-spacing:.4px;display:flex;align-items:center;gap:10px;font-family:inherit}
+  nav button:hover{color:var(--ink)}
+  nav button.active{color:var(--accent);border-bottom-color:var(--accent)}
+  nav button .num{font-size:.7rem;background:rgba(155,61,171,.18);color:var(--accent);padding:2px 7px;border-radius:3px;font-weight:700;letter-spacing:1px;font-variant-numeric:tabular-nums}
+  nav button.active .num{background:rgba(155,61,171,.4)}
+  nav button .tag{font-size:.6rem;background:rgba(255,255,255,.06);color:var(--muted);padding:1px 6px;border-radius:3px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+
+  .context{display:flex;align-items:center;gap:14px;padding:9px 24px;background:var(--bar2);border-bottom:1px solid var(--border);font-size:.78rem;min-height:38px;flex-wrap:wrap}
+  .context .label{font-size:.65rem;text-transform:uppercase;letter-spacing:1.1px;color:var(--muted);font-weight:600}
+  .context .pin{display:flex;align-items:center;gap:8px;color:var(--ink)}
+  .context .pin .dot{width:8px;height:8px;background:var(--accent);border-radius:50%;display:inline-block;box-shadow:0 0 6px rgba(200,125,212,.6)}
+  .context .pin b{font-weight:600}
+  .context .pin .crisis{color:var(--muted)}
+  .context .pin .badge2{font-size:.65rem;background:rgba(123,45,139,.3);border:1px solid var(--purple);color:var(--accent);padding:1px 7px;border-radius:3px;letter-spacing:.5px;font-weight:700}
+  .context .empty{color:var(--muted);font-style:italic}
+  .context .clear{margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:inherit;font-size:.7rem;padding:3px 10px;border-radius:4px;cursor:pointer;font-weight:600}
+  .context .clear:hover{color:var(--accent);border-color:var(--accent)}
+  .context .clear[hidden]{display:none}
+
+  main{flex:1;position:relative;min-height:0}
+  .frame{position:absolute;inset:0;border:none;width:100%;height:100%;display:none;background:#fff}
+  .frame.active{display:block}
+
+  footer{background:var(--bar);border-top:1px solid var(--border);padding:8px 24px;font-size:.7rem;color:var(--muted);text-align:center}
+  footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">EX</div>
+    <div>
+      <h1>Exodus</h1>
+      <div class="sub">Civilian Evacuation Risk Platform · NYU Ethical CoLab</div>
+    </div>
+  </div>
+  <div class="meta">
+    <div class="badge">v1.0</div>
+    <div>Three lenses · one workflow</div>
+  </div>
+</header>
+
+<nav id="nav">
+  <button data-tab="map" class="active"><span class="num">01</span>Locate <span class="tag">EII</span></button>
+  <button data-tab="assessment"><span class="num">02</span>Assess <span class="tag">CERAI</span></button>
+  <button data-tab="scenario"><span class="num">03</span>Plan <span class="tag">ERCF</span></button>
+  <button data-tab="routes"><span class="num">04</span>Routes <span class="tag">India</span></button>
+  <button data-tab="behavior"><span class="num">05</span>Behavior <span class="tag">Households</span></button>
+  <button data-tab="brief"><span class="num">★</span>Brief <span class="tag">Final</span></button>
+</nav>
+
+<div class="context" id="contextbar">
+  <span class="label">Working context</span>
+  <span id="pinEmpty" class="empty">No location pinned — start in <b>01 Locate</b> (click a crisis on the map). The final <b>★ Brief</b> at the end synthesizes everything.</span>
+  <span id="pinFilled" class="pin" hidden>
+    <span class="dot"></span>
+    <b id="pinName"></b>
+    <span class="badge2" id="pinIso"></span>
+    <span class="crisis" id="pinCrisis"></span>
+  </span>
+  <button class="clear" id="pinClear" hidden>Clear</button>
+</div>
+
+<main>
+  <iframe class="frame active" id="frame-map"        src="/static/crisis_map.html"></iframe>
+  <iframe class="frame"        id="frame-assessment" src="/static/risk_assessment.html"></iframe>
+  <iframe class="frame"        id="frame-scenario"   src="/static/scenario_model.html"></iframe>
+  <iframe class="frame"        id="frame-routes"     src="/static/routes_sim.html"></iframe>
+  <iframe class="frame"        id="frame-behavior"   src="/static/behavioral_sim/index.html"></iframe>
+  <iframe class="frame"        id="frame-brief"      src="/static/brief.html"></iframe>
+</main>
+
+<footer>
+  Exodus integrates the <b>Evacuation Inform Index</b>, the <b>Evacuation Risk Classification Framework</b>, and the <b>Civilian Evacuation Risk Anticipation Index</b>.
+  &nbsp;·&nbsp; <a href="/health">Health</a>
+  &nbsp;·&nbsp; <a href="/docs">API docs</a>
+</footer>
+
+<script>
+  /* ─── Tab routing ─── */
+  const stepper = document.getElementById('nav');
+  const frames = {
+    brief:      document.getElementById('frame-brief'),
+    map:        document.getElementById('frame-map'),
+    assessment: document.getElementById('frame-assessment'),
+    scenario:   document.getElementById('frame-scenario'),
+    routes:     document.getElementById('frame-routes'),
+    behavior:   document.getElementById('frame-behavior'),
+  };
+  function go(tab) {
+    if (!frames[tab]) return;
+    stepper.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    Object.entries(frames).forEach(([k, f]) => f.classList.toggle('active', k === tab));
+    history.replaceState(null, '', `#${tab}`);
+    setTimeout(() => sendContext(tab), 80);
+  }
+  stepper.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-tab]');
+    if (btn) go(btn.dataset.tab);
+  });
+
+  /* ─── Shared working context ─── */
+  const STORAGE_KEY = 'exodus.context.v1';
+  let context = loadContext();
+
+  function loadContext() {
+    try { return JSON.parse(sessionStorage.getItem(STORAGE_KEY)) || {}; }
+    catch { return {}; }
+  }
+  function saveContext() {
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(context)); }
+    catch {}
+  }
+  function setContext(patch) {
+    context = {...context, ...patch};
+    saveContext();
+    renderContextBar();
+    Object.values(frames).forEach(f => {
+      try { f.contentWindow?.postMessage({type:'exodus:context', context}, '*'); } catch {}
+    });
+  }
+  function clearContext() {
+    context = {};
+    saveContext();
+    renderContextBar();
+    Object.values(frames).forEach(f => {
+      try { f.contentWindow?.postMessage({type:'exodus:context', context}, '*'); } catch {}
+    });
+  }
+  function sendContext(tab) {
+    const f = frames[tab];
+    if (!f) return;
+    try { f.contentWindow?.postMessage({type:'exodus:context', context}, '*'); } catch {}
+  }
+
+  function renderContextBar() {
+    const has = !!context.iso3 || !!context.country;
+    document.getElementById('pinEmpty').hidden = has;
+    document.getElementById('pinFilled').hidden = !has;
+    document.getElementById('pinClear').hidden = !has;
+    if (has) {
+      document.getElementById('pinName').textContent = context.country || context.iso3 || 'Unknown';
+      document.getElementById('pinIso').textContent = context.iso3 || '—';
+      document.getElementById('pinCrisis').textContent = context.crisis ? '· ' + context.crisis : '';
+    }
+  }
+  document.getElementById('pinClear').addEventListener('click', clearContext);
+
+  /* ─── Receive messages from iframes ─── */
+  window.addEventListener('message', (e) => {
+    const m = e.data;
+    if (!m || typeof m !== 'object') return;
+    if (m.type === 'exodus:pin') {
+      setContext({
+        iso3:        m.iso3 || context.iso3,
+        country:     m.country || context.country,
+        crisis:      m.crisis || context.crisis,
+        lat:         m.lat ?? context.lat,
+        lng:         m.lng ?? context.lng,
+        informScore: m.informScore ?? context.informScore,
+        sev:         m.sev ?? context.sev,
+        ercfLevel:   m.ercfLevel ?? context.ercfLevel,
+        population:  m.population ?? context.population,
+        rss:         m.rss ?? context.rss,
+        rse:         m.rse ?? context.rse,
+        impact:      m.impact ?? context.impact,
+        trend:       m.trend ?? context.trend,
+        drivers:     m.drivers ?? context.drivers,
+      });
+    } else if (m.type === 'exodus:goto') {
+      go(m.tab);
+    } else if (m.type === 'exodus:context.request') {
+      const target = Object.values(frames).find(f => f.contentWindow === e.source);
+      if (target) try { target.contentWindow.postMessage({type:'exodus:context', context}, '*'); } catch {}
+    }
+  });
+
+  /* ─── Restore tab from hash ─── */
+  const initial = (location.hash || '#map').replace('#','');
+  if (frames[initial]) go(initial);
+  renderContextBar();
+</script>
+</body>
+</html>

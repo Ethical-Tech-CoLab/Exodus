@@ -1,0 +1,82 @@
+/* ───────────────────────────────────────────────────────────────────
+   Exodus design tokens — single source of truth across all tabs.
+   Each tab's local :root re-aliases its own variable names to these.
+   ─────────────────────────────────────────────────────────────────── */
+:root {
+  /* surfaces (dark, used by Brief / Assess / Plan) */
+  --ex-bg:        #0d1b2a;
+  --ex-bg2:       #1a2d42;
+  --ex-bg3:       #1e3450;
+  --ex-bg4:       #243d5c;
+
+  /* surfaces (light, used by Locate / Routes map-style tabs) */
+  --ex-bg-light:  #f4f6f9;
+  --ex-card-light:#ffffff;
+  --ex-ink-light: #1c2733;
+  --ex-muted-light:#5b6b7a;
+  --ex-line-light:#dce3ea;
+
+  /* text */
+  --ex-ink:       #e8eef4;
+  --ex-muted:     #a0b4c8;
+
+  /* brand */
+  --ex-purple:    #7b2d8b;
+  --ex-purple2:   #9b3dab;
+  --ex-accent:    #c87dd4;
+
+  /* lines + semantic */
+  --ex-border:    #2a4060;
+  --ex-green:     #27ae60;
+  --ex-yellow:    #f39c12;
+  --ex-orange:    #e67e22;
+  --ex-red:       #c0392b;
+  --ex-extreme:   #8e44ad;
+  --ex-blue:      #2c7fb8;
+  --ex-teal:      #1abc9c;
+
+  /* shape + motion */
+  --ex-radius:    6px;
+  --ex-radius-lg: 10px;
+  --ex-shadow:    0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
+  --ex-shadow-lg: 0 4px 16px rgba(0,0,0,0.18);
+
+  /* typography */
+  --ex-font:      'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  --ex-mono:      'JetBrains Mono', Consolas, Monaco, monospace;
+  --ex-fs:        13px;
+  --ex-lh:        1.5;
+}
+
+/* Baseline so every iframe shares the same font + box-sizing. Page-specific
+   selectors can still override anything they need to. */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { font-family: var(--ex-font); font-size: var(--ex-fs); line-height: var(--ex-lh); }
+
+/* ── shared primitives — opt-in via .ex-* classes ───────────────────── */
+.ex-btn {
+  font-family: inherit; font-size: .82rem; font-weight: 600;
+  border: 1px solid var(--ex-border); background: var(--ex-bg2); color: var(--ex-ink);
+  padding: 8px 14px; border-radius: var(--ex-radius); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.ex-btn:hover { background: var(--ex-bg3); border-color: var(--ex-purple2); color: var(--ex-accent); }
+.ex-btn--primary { background: linear-gradient(135deg, var(--ex-purple), var(--ex-purple2)); border-color: var(--ex-purple2); color: #fff; }
+.ex-btn--primary:hover { filter: brightness(1.1); color: #fff; }
+
+.ex-card {
+  background: var(--ex-bg2); border: 1px solid var(--ex-border);
+  border-radius: var(--ex-radius-lg); padding: 16px 18px; box-shadow: var(--ex-shadow);
+}
+.ex-card h3 { font-size: .95rem; font-weight: 700; margin: 0 0 8px; color: var(--ex-ink); }
+.ex-card .ex-card-label {
+  font-size: .65rem; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--ex-muted); font-weight: 700; margin-bottom: 6px;
+}
+
+.ex-tag {
+  display: inline-block; font-size: .62rem; font-weight: 700; letter-spacing: .5px;
+  text-transform: uppercase; padding: 2px 7px; border-radius: 3px;
+  background: rgba(155,61,171,.18); color: var(--ex-accent); border: 1px solid rgba(155,61,171,.4);
+}

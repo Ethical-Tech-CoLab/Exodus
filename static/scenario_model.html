@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scenario Model — ERCF</title>
+<link rel="stylesheet" href="/static/exodus.css">
+<style>
+  :root {
+    --bg:#0d1b2a; --bg2:#1a2d42; --bg3:#1e3450; --bg4:#243d5c;
+    --ink:#e8eef4; --muted:#a0b4c8; --border:#2a4060;
+    --purple:#7b2d8b; --purple2:#9b3dab; --accent:#c87dd4;
+    --green:#27ae60; --yellow:#f39c12; --orange:#e67e22; --red:#c0392b; --extreme:#8e44ad;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--ink);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px}
+  body{display:grid;grid-template-columns:1fr 1fr;min-height:100%}
+  @media(max-width:960px){body{grid-template-columns:1fr}}
+  .pane{padding:18px 22px;overflow-y:auto;max-height:100vh}
+  .pane.left{border-right:1px solid var(--border)}
+  .pane.right{background:var(--bg2)}
+  h2{font-size:1.05rem;color:var(--accent);margin-bottom:12px;letter-spacing:.3px}
+  h3{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:18px 0 8px;border-bottom:1px solid var(--border);padding-bottom:4px}
+  h3:first-of-type{margin-top:4px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+  .row.full{grid-template-columns:1fr}
+  .field{display:flex;flex-direction:column;gap:3px}
+  label{font-size:.72rem;color:var(--muted);font-weight:500;display:flex;align-items:center;justify-content:space-between}
+  input[type=text],input[type=number],select{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--ink);padding:6px 8px;border-radius:5px;font-size:.82rem;outline:none}
+  input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--purple2)}
+  textarea{width:100%;min-height:42px;background:var(--bg3);border:1px solid var(--border);color:var(--ink);padding:6px 8px;border-radius:5px;font-size:.82rem;font-family:inherit;resize:vertical}
+  input[type=range]{width:100%;accent-color:var(--purple2)}
+  .range-row{display:flex;align-items:center;gap:8px}
+  .range-val{min-width:30px;text-align:right;font-weight:700;color:var(--accent);font-size:.82rem}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  button{background:linear-gradient(135deg,var(--purple),var(--purple2));border:none;color:#fff;padding:9px 16px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;letter-spacing:.4px}
+  button:hover{filter:brightness(1.1)}
+  button.ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+  button.ghost:hover{color:var(--ink);border-color:var(--muted)}
+  .ctx-banner{background:rgba(123,45,139,.12);border:1px solid var(--purple);border-radius:6px;padding:9px 12px;margin-bottom:14px;font-size:.78rem;display:flex;align-items:center;gap:10px}
+  .ctx-banner .icon{font-size:.65rem;color:var(--accent);font-weight:700;letter-spacing:.8px;text-transform:uppercase;background:rgba(155,61,171,.25);padding:2px 7px;border-radius:3px}
+  .ctx-banner b{font-weight:600;color:var(--accent)}
+  .ctx-banner.empty{background:transparent;border-color:var(--border);color:var(--muted);font-style:italic}
+  .ctx-banner.empty .icon{color:var(--muted);background:rgba(255,255,255,.05)}
+  .card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px}
+  .card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .card-h .t{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--accent)}
+  .card-h .pill{font-size:.66rem;padding:2px 8px;border-radius:10px;color:#fff;font-weight:700}
+  .pill.l0{background:var(--green)} .pill.l1{background:#7fb069} .pill.l2{background:var(--yellow)}
+  .pill.l3{background:var(--orange)} .pill.l4{background:var(--red)}
+  .gauge{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+  .stat{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 10px}
+  .stat .k{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .stat .v{font-size:1.05rem;font-weight:700;color:var(--ink);margin-top:2px;font-variant-numeric:tabular-nums}
+  .stat .v.big{font-size:1.5rem;color:var(--accent)}
+  table{width:100%;border-collapse:collapse;font-size:.78rem}
+  table th,table td{text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)}
+  table th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:.66rem;letter-spacing:.4px}
+  table td.n{text-align:right;font-variant-numeric:tabular-nums}
+  .saved-list{margin-top:6px}
+  .saved-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer}
+  .saved-item:hover{border-color:var(--purple2)}
+  .saved-item .info{flex:1;min-width:0}
+  .saved-item .nm{font-weight:600;font-size:.82rem}
+  .saved-item .sub{color:var(--muted);font-size:.7rem;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .err{color:#e88;font-size:.78rem;margin-top:8px}
+  .hint{color:var(--muted);font-size:.7rem;font-style:italic;margin-top:6px}
+  .delete{background:none;border:1px solid var(--red);color:var(--red);padding:3px 8px;border-radius:4px;font-size:.7rem;cursor:pointer}
+  .next-rail{margin-top:18px;padding:12px 14px;border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:.78rem;color:var(--muted)}
+  .next-rail b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<!-- ─── INPUTS ─── -->
+<section class="pane left">
+  <h2>03 · Plan — Operational Scenario (ERCF)</h2>
+
+  <div id="ctxBanner" class="ctx-banner empty">
+    <span class="icon">No context</span>
+    <span>Pin a location in <b>01 Locate</b> or <b>02 Assess</b> to prefill from INFORM data.</span>
+  </div>
+
+  <h3>Identity</h3>
+  <div class="row">
+    <div class="field">
+      <label>Scenario name</label>
+      <input id="name" type="text" placeholder="e.g. Mariupol corridor — Day 12">
+    </div>
+    <div class="field">
+      <label>Population at risk</label>
+      <input id="population" type="number" min="1" value="430000">
+    </div>
+  </div>
+  <div class="row full">
+    <div class="field">
+      <label>Description</label>
+      <textarea id="description" placeholder="Optional notes"></textarea>
+    </div>
+  </div>
+
+  <h3>Population &amp; Geography</h3>
+  <div class="row">
+    <div class="field">
+      <label>Vulnerable %</label>
+      <input id="vulnerable_pct" type="number" min="0" max="100" step="0.1" value="25">
+    </div>
+    <div class="field">
+      <label>Distance to safety (km)</label>
+      <input id="distance_km" type="number" min="1" step="0.1" value="120">
+    </div>
+  </div>
+  <div class="row">
+    <div class="field">
+      <label>Terrain (1=urban → 5=alpine/desert)</label>
+      <select id="terrain">
+        <option value="1">1 — Urban / paved</option>
+        <option value="2">2 — Mixed urban-rural</option>
+        <option value="3" selected>3 — Rural / improved roads</option>
+        <option value="4">4 — Mountainous / poor roads</option>
+        <option value="5">5 — Alpine / desert / no roads</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Conflict pattern</label>
+      <select id="conflict_pattern">
+        <option value="1">1 — Urban siege</option>
+        <option value="2">2 — Enclave / encircled</option>
+        <option value="3">3 — Active city conflict</option>
+        <option value="4">4 — Regional conflict</option>
+        <option value="5" selected>5 — Auto / unspecified</option>
+      </select>
+    </div>
+  </div>
+
+  <h3>ERCF Dimensions (1 — 5)</h3>
+  <div id="dims"></div>
+
+  <h3>Time horizon</h3>
+  <div class="row">
+    <div class="field">
+      <label>Planning days</label>
+      <input id="days" type="number" min="1" max="365" value="30">
+    </div>
+    <div class="field">
+      <label>Remaining % (cost of staying)</label>
+      <input id="remaining_pct" type="number" min="0" max="1" step="0.05" value="0.4">
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="btnCalc">Calculate</button>
+    <button id="btnSave" class="ghost">Save scenario</button>
+    <button id="btnReset" class="ghost">Reset</button>
+  </div>
+  <div id="err" class="err"></div>
+  <div class="hint">All calculations are indicative — for planning, not procurement.</div>
+
+  <h3>Saved scenarios</h3>
+  <div id="saved" class="saved-list"></div>
+</section>
+
+<!-- ─── OUTPUTS ─── -->
+<section class="pane right">
+  <h2>Risk · Resources · Cost</h2>
+
+  <div class="card">
+    <div class="card-h">
+      <div class="t">Risk score</div>
+      <div id="riskPill" class="pill l0">—</div>
+    </div>
+    <div class="gauge">
+      <div class="stat"><div class="k">Weighted score (1–5)</div><div id="riskScore" class="v big">—</div></div>
+      <div class="stat"><div class="k">NATO equivalent</div><div id="natoEq" class="v">—</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><div class="t">Resources required</div></div>
+    <div class="gauge">
+      <div class="stat"><div class="k">Buses</div><div id="rBuses" class="v">—</div></div>
+      <div class="stat"><div class="k">Ambulances</div><div id="rAmb" class="v">—</div></div>
+      <div class="stat"><div class="k">Drivers</div><div id="rDrv" class="v">—</div></div>
+      <div class="stat"><div class="k">Medics</div><div id="rMed" class="v">—</div></div>
+      <div class="stat"><div class="k">Security</div><div id="rSec" class="v">—</div></div>
+      <div class="stat"><div class="k">Coordinators</div><div id="rCoo" class="v">—</div></div>
+    </div>
+    <table>
+      <tr><th>Water</th><td class="n"><span id="rWater">—</span> L</td></tr>
+      <tr><th>Food</th><td class="n"><span id="rFood">—</span> kg</td></tr>
+      <tr><th>Fuel</th><td class="n"><span id="rFuel">—</span> L diesel</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><div class="t">Cost of staying</div></div>
+    <div class="gauge">
+      <div class="stat"><div class="k">Daily (USD)</div><div id="sDay" class="v">—</div></div>
+      <div class="stat"><div class="k">Total over period</div><div id="sTot" class="v big">—</div></div>
+      <div class="stat"><div class="k">Expected casualties</div><div id="sCas" class="v">—</div></div>
+      <div class="stat"><div class="k">Conflict type</div><div id="sCT" class="v" style="font-size:.92rem">—</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><div class="t">Cost of evacuating</div></div>
+    <div class="gauge">
+      <div class="stat"><div class="k">Transport / person</div><div id="eTpp" class="v">—</div></div>
+      <div class="stat"><div class="k">Transport total</div><div id="eTot" class="v">—</div></div>
+      <div class="stat"><div class="k">Shelter total</div><div id="eShel" class="v">—</div></div>
+      <div class="stat"><div class="k">Grand total</div><div id="eGrand" class="v big">—</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><div class="t">Historical analogues</div></div>
+    <div id="hist"></div>
+  </div>
+
+  <div class="next-rail">
+    <span>End of workflow · revise in <b>02 Assess</b> to refine the pin</span>
+    <button class="ghost" id="btnPrev">← Back to Assess</button>
+  </div>
+</section>
+
+<script>
+const DIMS = [
+  ["d1_kinetic",       "D1 — Kinetic threat",      "1=quiet · 5=active mass-casualty fire"],
+  ["d2_vulnerability", "D2 — Mobility / vulnerability","1=fully mobile · 5=mass casualties"],
+  ["d3_political",     "D3 — Political authorisation","1=full consent · 5=actively obstructed"],
+  ["d4_logistics",     "D4 — Logistics capacity",   "1=ample · 5=collapsed"],
+  ["d5_destination",   "D5 — Destination readiness","1=open intake · 5=hostile / saturated"],
+  ["d6_urgency",       "D6 — Urgency",              "1=days · 5=imminent (<6h)"],
+  ["d7_information",   "D7 — Information environment","1=clear · 5=blackout / denial"],
+];
+
+const fmt = {
+  int: n => (n === null || n === undefined || Number.isNaN(n)) ? "—" : Math.round(n).toLocaleString(),
+  usd: n => (n === null || n === undefined || Number.isNaN(n)) ? "—" :
+            "$" + Math.round(n).toLocaleString(),
+};
+
+function buildDims() {
+  const host = document.getElementById('dims');
+  host.innerHTML = "";
+  DIMS.forEach(([id, label, help]) => {
+    const wrap = document.createElement('div');
+    wrap.className = "field";
+    wrap.innerHTML = `
+      <label>${label} <span style="color:var(--muted);font-weight:400">${help}</span></label>
+      <div class="range-row">
+        <input id="${id}" type="range" min="1" max="5" step="0.1" value="3">
+        <span class="range-val" id="${id}_v">3.0</span>
+      </div>`;
+    host.appendChild(wrap);
+    const slider = wrap.querySelector('input');
+    const val = wrap.querySelector('.range-val');
+    slider.addEventListener('input', () => val.textContent = Number(slider.value).toFixed(1));
+  });
+}
+buildDims();
+
+function readForm() {
+  const num = id => Number(document.getElementById(id).value);
+  return {
+    name:        document.getElementById('name').value.trim() || "Untitled scenario",
+    description: document.getElementById('description').value.trim(),
+    population:  num('population'),
+    vulnerable_pct: num('vulnerable_pct'),
+    distance_km: num('distance_km'),
+    terrain:     num('terrain'),
+    conflict_pattern: num('conflict_pattern'),
+    days:        num('days'),
+    remaining_pct: num('remaining_pct'),
+    d1_kinetic:       num('d1_kinetic'),
+    d2_vulnerability: num('d2_vulnerability'),
+    d3_political:     num('d3_political'),
+    d4_logistics:     num('d4_logistics'),
+    d5_destination:   num('d5_destination'),
+    d6_urgency:       num('d6_urgency'),
+    d7_information:   num('d7_information'),
+  };
+}
+
+async function post(url, body) {
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
+  return r.json();
+}
+async function getJSON(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`${r.status}`);
+  return r.json();
+}
+
+async function calculateAll() {
+  const f = readForm();
+  document.getElementById('err').textContent = "";
+  try {
+    const dims = {
+      d1_kinetic: f.d1_kinetic, d2_vulnerability: f.d2_vulnerability,
+      d3_political: f.d3_political, d4_logistics: f.d4_logistics,
+      d5_destination: f.d5_destination, d6_urgency: f.d6_urgency,
+      d7_information: f.d7_information,
+    };
+    const risk = await post('/api/calculate/risk', dims);
+    document.getElementById('riskScore').textContent = risk.risk_score.toFixed(2);
+    document.getElementById('natoEq').textContent = risk.nato_equivalent;
+    const pill = document.getElementById('riskPill');
+    pill.className = `pill l${risk.risk_level}`;
+    pill.textContent = `Lvl ${risk.risk_level} — ${risk.risk_label}`;
+
+    const res = await post('/api/calculate/resources', {
+      population: f.population, vulnerable_pct: f.vulnerable_pct,
+      distance_km: f.distance_km, risk_level: risk.risk_level,
+      d2_mobility: f.d2_vulnerability, terrain: f.terrain,
+    });
+    document.getElementById('rBuses').textContent = fmt.int(res.vehicles.buses);
+    document.getElementById('rAmb').textContent   = fmt.int(res.vehicles.ambulances);
+    document.getElementById('rDrv').textContent   = fmt.int(res.personnel.drivers);
+    document.getElementById('rMed').textContent   = fmt.int(res.personnel.medics);
+    document.getElementById('rSec').textContent   = fmt.int(res.personnel.security);
+    document.getElementById('rCoo').textContent   = fmt.int(res.personnel.coordinators);
+    document.getElementById('rWater').textContent = fmt.int(res.supplies.water_l);
+    document.getElementById('rFood').textContent  = fmt.int(res.supplies.food_kg);
+    document.getElementById('rFuel').textContent  = fmt.int(res.supplies.fuel_l);
+
+    const stay = await post('/api/calculate/staying-cost', {
+      population: f.population, risk_level: risk.risk_level, days: f.days,
+      d1: f.d1_kinetic, d2: f.d2_vulnerability, d3: f.d3_political, d4: f.d4_logistics,
+      remaining_pct: f.remaining_pct,
+      conflict_type: ({1:"urban_siege",2:"enclave",3:"city_conflict",4:"regional",5:"auto"})[f.conflict_pattern],
+    });
+    document.getElementById('sDay').textContent = fmt.usd(stay.cost_per_day);
+    document.getElementById('sTot').textContent = fmt.usd(stay.total_cost);
+    document.getElementById('sCas').textContent = stay.expected_casualties.toLocaleString();
+    document.getElementById('sCT').textContent  = stay.conflict_type;
+
+    const evac = await post('/api/calculate/remaining-cost', {
+      population: f.population, vulnerable_pct: f.vulnerable_pct,
+      risk_level: risk.risk_level, days: f.days, distance_km: f.distance_km, terrain: f.terrain,
+      d1: f.d1_kinetic, d2: f.d2_vulnerability, d3: f.d3_political, d4: f.d4_logistics,
+      d5: f.d5_destination, d6: f.d6_urgency, d7: f.d7_information,
+    });
+    document.getElementById('eTpp').textContent  = fmt.usd(evac.transport_per_capita);
+    document.getElementById('eTot').textContent  = fmt.usd(evac.transport_total);
+    document.getElementById('eShel').textContent = fmt.usd(evac.shelter_total);
+    document.getElementById('eGrand').textContent= fmt.usd(evac.total_cost);
+
+    // Publish ERCF state for the final Brief synthesis to read
+    try {
+      sessionStorage.setItem('exodus.state.plan.v1', JSON.stringify({
+        riskScore:        risk.risk_score,
+        riskLevel:        risk.risk_level,
+        riskLabel:        risk.risk_label,
+        natoEquivalent:   risk.nato_equivalent,
+        dims:             dims,
+        scenarioName:     f.name || null,
+        population:       f.population,
+        vulnerablePct:    f.vulnerable_pct,
+        distanceKm:       f.distance_km,
+        days:             f.days,
+        remainingPct:     f.remaining_pct,
+        terrain:          f.terrain,
+        conflictPattern:  f.conflict_pattern,
+        stayPerDay:       stay.cost_per_day,
+        stayTotal:        stay.total_cost,
+        stayCasualties:   stay.expected_casualties,
+        conflictType:     stay.conflict_type,
+        evacTotal:        evac.total_cost,
+        evacTransport:    evac.transport_total,
+        evacShelter:      evac.shelter_total,
+        evacPerCapita:    evac.transport_per_capita,
+        resources:        res,
+        updatedAt:        new Date().toISOString(),
+      }));
+    } catch(_) {}
+
+    return {risk, res, stay, evac, form: f};
+  } catch (e) {
+    document.getElementById('err').textContent = "Calculation failed: " + e.message;
+    throw e;
+  }
+}
+
+async function saveScenario() {
+  const f = readForm();
+  try {
+    const payload = {
+      name: f.name, description: f.description,
+      population: f.population, vulnerable_pct: f.vulnerable_pct,
+      distance_km: f.distance_km, terrain: f.terrain, conflict_pattern: f.conflict_pattern,
+      d1_kinetic: f.d1_kinetic, d2_vulnerability: f.d2_vulnerability,
+      d3_political: f.d3_political, d4_logistics: f.d4_logistics,
+      d5_destination: f.d5_destination, d6_urgency: f.d6_urgency, d7_information: f.d7_information,
+    };
+    await post('/api/scenarios', payload);
+    await loadSaved();
+  } catch (e) {
+    document.getElementById('err').textContent = "Save failed: " + e.message;
+  }
+}
+
+async function loadSaved() {
+  const host = document.getElementById('saved');
+  host.innerHTML = '<div class="hint">loading…</div>';
+  try {
+    const items = await getJSON('/api/scenarios');
+    if (!items.length) { host.innerHTML = '<div class="hint">No saved scenarios yet.</div>'; return; }
+    host.innerHTML = "";
+    items.forEach(s => {
+      const div = document.createElement('div');
+      div.className = "saved-item";
+      div.innerHTML = `
+        <div class="info">
+          <div class="nm">${s.name}</div>
+          <div class="sub">Lvl ${s.risk_level ?? '—'} · pop ${fmt.int(s.population)} · ${new Date(s.created_at).toLocaleString()}</div>
+        </div>
+        <button class="delete" data-id="${s.id}">Del</button>`;
+      div.addEventListener('click', e => {
+        if (e.target.classList.contains('delete')) return;
+        applyScenario(s);
+      });
+      div.querySelector('.delete').addEventListener('click', async e => {
+        e.stopPropagation();
+        await fetch('/api/scenarios/' + s.id, {method:'DELETE'});
+        loadSaved();
+      });
+      host.appendChild(div);
+    });
+  } catch (e) {
+    host.innerHTML = `<div class="err">${e.message}</div>`;
+  }
+}
+
+function applyScenario(s) {
+  const set = (id, v) => { const el = document.getElementById(id); if (el != null && v != null) el.value = v; };
+  set('name', s.name);
+  set('description', s.description);
+  set('population', s.population);
+  set('vulnerable_pct', s.vulnerable_pct);
+  set('distance_km', s.distance_km);
+  set('terrain', s.terrain);
+  set('conflict_pattern', s.conflict_pattern);
+  DIMS.forEach(([k]) => {
+    set(k, s[k]);
+    const v = document.getElementById(k + '_v');
+    if (v != null) v.textContent = Number(s[k]).toFixed(1);
+  });
+  calculateAll();
+}
+
+async function loadHistorical() {
+  try {
+    const items = await getJSON('/api/historical-cases');
+    const top = items.slice(0, 6);
+    document.getElementById('hist').innerHTML = top.map(h => `
+      <div style="border-bottom:1px solid var(--border);padding:6px 0;font-size:.78rem">
+        <div style="font-weight:600">${h.year} · ${h.country} — ${h.case}</div>
+        <div style="color:var(--muted);font-size:.7rem">Lvl ${h.ercf_level} · ${fmt.int(h.population_at_risk)} at risk · ${fmt.int(h.evacuated)} evacuated</div>
+      </div>`).join("");
+  } catch {}
+}
+
+/* ─── Context from shell ─── */
+function applyContext(ctx) {
+  const banner = document.getElementById('ctxBanner');
+  if (!ctx || (!ctx.iso3 && !ctx.country)) {
+    banner.className = 'ctx-banner empty';
+    banner.innerHTML = `<span class="icon">No context</span><span>Pin a location in <b>01 Locate</b> or <b>02 Assess</b> to prefill from INFORM data.</span>`;
+    return;
+  }
+  banner.className = 'ctx-banner';
+  banner.innerHTML = `<span class="icon">Pinned</span><span><b>${ctx.country || ctx.iso3}</b>${ctx.crisis ? ' · ' + ctx.crisis : ''}${ctx.sev ? ' · INFORM sev ' + ctx.sev : ''}</span>`;
+
+  const nameEl = document.getElementById('name');
+  if (!nameEl.value.trim()) nameEl.value = `${ctx.country || ctx.iso3}${ctx.crisis ? ' — ' + ctx.crisis : ''}`;
+
+  if (ctx.ercfLevel != null || ctx.sev != null) {
+    const lvl = ctx.ercfLevel != null ? ctx.ercfLevel : Math.max(0, Math.min(4, (ctx.sev || 1) - 1));
+    const dimDefaults = ([
+      {d1:1.0,d2:1.5,d3:3.0,d4:2.0,d5:2.0,d6:1.0,d7:1.5},
+      {d1:2.0,d2:2.5,d3:2.5,d4:2.5,d5:2.5,d6:2.0,d7:2.0},
+      {d1:3.0,d2:3.0,d3:2.5,d4:3.0,d5:2.5,d6:3.0,d7:2.5},
+      {d1:4.0,d2:3.5,d3:2.5,d4:3.5,d5:3.0,d6:4.0,d7:3.0},
+      {d1:5.0,d2:4.0,d3:1.5,d4:4.0,d5:3.0,d6:4.5,d7:4.0},
+    ])[lvl];
+    const apply = (id, v) => {
+      const el = document.getElementById(id);
+      if (el && Number(el.value) === 3) {
+        el.value = v;
+        const lab = document.getElementById(id + '_v');
+        if (lab) lab.textContent = Number(v).toFixed(1);
+      }
+    };
+    apply('d1_kinetic', dimDefaults.d1);
+    apply('d2_vulnerability', dimDefaults.d2);
+    apply('d3_political', dimDefaults.d3);
+    apply('d4_logistics', dimDefaults.d4);
+    apply('d5_destination', dimDefaults.d5);
+    apply('d6_urgency', dimDefaults.d6);
+    apply('d7_information', dimDefaults.d7);
+  }
+  if (ctx.population) document.getElementById('population').value = ctx.population;
+}
+
+window.addEventListener('message', (e) => {
+  const m = e.data;
+  if (m && m.type === 'exodus:context') applyContext(m.context || {});
+});
+try { window.parent.postMessage({type:'exodus:context.request'}, '*'); } catch {}
+
+document.getElementById('btnCalc').addEventListener('click', calculateAll);
+document.getElementById('btnSave').addEventListener('click', async () => {
+  await calculateAll();
+  await saveScenario();
+});
+document.getElementById('btnReset').addEventListener('click', () => location.reload());
+document.getElementById('btnPrev').addEventListener('click', () => {
+  try { window.parent.postMessage({type:'exodus:goto', tab:'assessment'}, '*'); } catch {}
+});
+
+loadSaved();
+loadHistorical();
+</script>
+</body>
+</html>
