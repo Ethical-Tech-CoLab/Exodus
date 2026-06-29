@@ -1,7 +1,22 @@
+import os
 import sqlite3
 from typing import Dict, List, Optional
 
-DB_PATH = "evacuation_risk.db"
+# On Vercel (and any other read-only-filesystem serverless host) the project
+# directory can't be written to. Use /tmp, which is the only writable path on
+# Vercel's runtime. Per-invocation /tmp is ephemeral — scenarios won't persist
+# across cold starts, but the app will at least boot. In local dev we keep the
+# DB next to the source so existing data is preserved.
+def _resolve_db_path() -> str:
+    override = os.environ.get("EXODUS_DB_PATH")
+    if override:
+        return override
+    if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        return "/tmp/evacuation_risk.db"
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "evacuation_risk.db")
+
+
+DB_PATH = _resolve_db_path()
 
 
 def get_conn():

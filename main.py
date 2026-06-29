@@ -131,7 +131,13 @@ class CountryContextReq(BaseModel):
 
 @app.on_event("startup")
 async def _startup():
-    init_db()
+    # Don't let a read-only / locked filesystem (e.g. Vercel's lambda runtime
+    # outside /tmp) take the whole app down. Scenario endpoints will surface
+    # their own errors when called.
+    try:
+        init_db()
+    except Exception as e:
+        print(f"[exodus] init_db skipped at startup: {e}")
 
 
 # ─── Static UI ────────────────────────────────────────────────────────────────
