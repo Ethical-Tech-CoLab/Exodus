@@ -285,6 +285,11 @@
         per-group urgency, and a tunable uncertainty slider. Read what changes when
         you only know <i>some</i> facilities' status.
       </div>
+      <div id="routesResult" hidden style="margin:10px 0 12px;padding:10px 12px;background:rgba(155,61,171,.10);border:1px solid rgba(155,61,171,.4);border-radius:6px">
+        <div style="font-size:.62rem;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:700;margin-bottom:4px">Latest run <span id="routesAge" style="opacity:.7;text-transform:none;letter-spacing:0;font-weight:500"></span></div>
+        <div style="display:flex;align-items:baseline;gap:8px"><span id="routesHead" style="font-size:1.5rem;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums">—</span><span id="routesHeadLbl" style="font-size:.72rem;color:var(--muted)">avg success</span></div>
+        <div id="routesSummary" style="font-size:.72rem;color:var(--ink);margin-top:4px;line-height:1.45">—</div>
+      </div>
       <button id="btnRoutes" class="ex-btn ex-btn--primary" style="width:100%;justify-content:center">Open in 04 Routes →</button>
     </div>
     <div class="lens l-ercf">
@@ -297,6 +302,11 @@
         Agent-based model of family clusters going through
         UNAWARE → SEEKING → MILLING → EVACUATING → DONE, with elders, young children,
         info-source clarity, and neighbour social signals all delaying departure.
+      </div>
+      <div id="behaviorResult" hidden style="margin:10px 0 12px;padding:10px 12px;background:rgba(155,61,171,.10);border:1px solid rgba(155,61,171,.4);border-radius:6px">
+        <div style="font-size:.62rem;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:700;margin-bottom:4px">Latest run <span id="behaviorAge" style="opacity:.7;text-transform:none;letter-spacing:0;font-weight:500"></span></div>
+        <div style="display:flex;align-items:baseline;gap:8px"><span id="behaviorHead" style="font-size:1.5rem;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums">—</span><span id="behaviorHeadLbl" style="font-size:.72rem;color:var(--muted)">% evacuated</span></div>
+        <div id="behaviorSummary" style="font-size:.72rem;color:var(--ink);margin-top:4px;line-height:1.45">—</div>
       </div>
       <button id="btnBehavior" class="ex-btn ex-btn--primary" style="width:100%;justify-content:center">Open in 05 Behavior →</button>
     </div>
@@ -371,8 +381,10 @@ function applyContext(ctx) {
 function readUpstreamState() {
   const r = k => { try { return JSON.parse(sessionStorage.getItem(k) || 'null'); } catch(_) { return null; } };
   return {
-    assess: r('exodus.state.assess.v1'),
-    plan:   r('exodus.state.plan.v1'),
+    assess:   r('exodus.state.assess.v1'),
+    plan:     r('exodus.state.plan.v1'),
+    routes:   r('exodus.state.routes.v1'),
+    behavior: r('exodus.state.behavior.v1'),
   };
 }
 
@@ -392,10 +404,10 @@ function renderSynthStatus() {
   const u = readUpstreamState();
   const items = [
     { label:'01 Locate · EII',          live: !!(context && context.iso3), note: (context && context.iso3) ? '✓ pinned' : '— no pin' },
-    { label:'02 Assess · CERAI',        live: !!u.assess, note: u.assess ? ('✓ live · ' + fmtAge(u.assess.updatedAt)) : '— defaults' },
-    { label:'03 Plan · ERCF',           live: !!u.plan,   note: u.plan   ? ('✓ live · ' + fmtAge(u.plan.updatedAt))   : '— defaults' },
-    { label:'04 Routes · India',        live: false,      note: 'standalone sim' },
-    { label:'05 Behavior · Households', live: false,      note: 'standalone sim' },
+    { label:'02 Assess · CERAI',        live: !!u.assess,   note: u.assess   ? ('✓ live · ' + fmtAge(u.assess.updatedAt))   : '— defaults' },
+    { label:'03 Plan · ERCF',           live: !!u.plan,     note: u.plan     ? ('✓ live · ' + fmtAge(u.plan.updatedAt))     : '— defaults' },
+    { label:'04 Routes · India',        live: !!u.routes,   note: u.routes   ? ('✓ live · ' + fmtAge(u.routes.updatedAt))   : '— not run' },
+    { label:'05 Behavior · Households', live: !!u.behavior, note: u.behavior ? ('✓ live · ' + fmtAge(u.behavior.updatedAt)) : '— not run' },
   ];
   const inner = '<span class="lens-title">Pulled from</span>' +
     items.map(it => `<span class="lens-pip ${it.live ? 'lens-on' : 'lens-off'}">${it.label} <small>${it.note}</small></span>`).join('');
@@ -443,6 +455,28 @@ function applyUpstreamOverrides() {
       set('resFuel', fmt.int(r.supplies.fuel_l));
     }
     tagLens('ercf');
+  }
+
+  // 04 Routes — show latest run summary in the What-if card
+  if (u.routes) {
+    const r = document.getElementById('routesResult');
+    if (r) r.hidden = false;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('routesHead',    String(u.routes.headlineNumber ?? '—'));
+    set('routesHeadLbl', u.routes.headlineLabel || '');
+    set('routesSummary', u.routes.summary || '');
+    set('routesAge',     u.routes.updatedAt ? ('· ' + fmtAge(u.routes.updatedAt)) : '');
+  }
+
+  // 05 Behavior — show latest run summary in the What-if card
+  if (u.behavior) {
+    const r = document.getElementById('behaviorResult');
+    if (r) r.hidden = false;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('behaviorHead',    String(u.behavior.headlineNumber ?? '—'));
+    set('behaviorHeadLbl', u.behavior.headlineLabel || '');
+    set('behaviorSummary', u.behavior.summary || '');
+    set('behaviorAge',     u.behavior.updatedAt ? ('· ' + fmtAge(u.behavior.updatedAt)) : '');
   }
 
   renderSynthStatus();

@@ -1022,6 +1022,40 @@ function runSimulation() {
   renderChart(state.groups, state.curves);
   renderInsights(state.destinations, state.groups, assignments);
   updateStats(state.destinations, state.groups, assignments);
+  publishRoutesState();
+}
+
+// Publish a uniform summary so the ★ Brief can synthesise across all five
+// models without knowing this tab's internals.
+function publishRoutesState() {
+  try {
+    if (!state.assignments || !state.assignments.length) return;
+    const srs = state.assignments.map(a => a.primary.mc.successRate);
+    const avg = srs.reduce((a,b)=>a+b,0) / srs.length;
+    const high = srs.filter(s => s < 0.40).length;
+    const med  = srs.filter(s => s >= 0.40 && s < 0.70).length;
+    const low  = srs.filter(s => s >= 0.70).length;
+    const top3 = state.destinations
+      .map(d => ({ name: d.name, capacity: d.capacity }))
+      .slice(0, 3);
+    const headlineNumber = Math.round(avg * 100);
+    sessionStorage.setItem('exodus.state.routes.v1', JSON.stringify({
+      tab: 'routes',
+      headlineNumber,
+      headlineLabel: 'avg success (%)',
+      summary: `${state.groups.length} groups → ${state.destinations.length} destinations · ${headlineNumber}% avg success · uncertainty ${Math.round(state.uncertaintyLevel*100)}%`,
+      detail: {
+        seed: state.seed || null,
+        destinations: state.destinations.length,
+        groups: state.groups.length,
+        uncertainty: state.uncertaintyLevel,
+        successAvg: avg,
+        riskBuckets: { high, medium: med, low },
+        topDestinations: top3,
+      },
+      updatedAt: new Date().toISOString(),
+    }));
+  } catch(_) { /* sessionStorage may be unavailable in some sandboxes */ }
 }
 
 function generateScenario() {
@@ -1064,6 +1098,36 @@ window.addEventListener('resize', () => {
 
 // Initial render on load
 generateScenario();
+
+// ── Shell integration ────────────────────────────────────────────────────
+// When the user pins a conflict upstream (01 Locate), regenerate the
+// scenario deterministically for that crisis instead of seed 42.
+function _hashIso3(iso3) {
+  // simple deterministic int from a 3-char string, kept in seed range
+  let h = 0;
+  for (let i = 0; i < iso3.length; i++) h = ((h * 31) + iso3.charCodeAt(i)) >>> 0;
+  return (h % 999000) + 1000;
+}
+let _ctxApplied = false;
+function applyExodusContext(ctx) {
+  if (!ctx || !ctx.iso3 || _ctxApplied) return;
+  _ctxApplied = true;
+  // Deterministic seed per country so two analysts see the same scenario
+  const seedInput = document.getElementById('seed-input');
+  if (seedInput) seedInput.value = String(_hashIso3(ctx.iso3));
+  // Scale evacuee groups from severity: sev 5 → many groups, sev 1 → few
+  if (ctx.sev != null) {
+    const nGroups = Math.max(1, Math.min(8, Math.round(Number(ctx.sev) * 1.5)));
+    const gInput = document.getElementById('n-groups');
+    if (gInput) gInput.value = String(nGroups);
+  }
+  generateScenario();
+}
+window.addEventListener('message', e => {
+  const m = e.data;
+  if (m && m.type === 'exodus:context') applyExodusContext(m.context || {});
+});
+try { window.parent.postMessage({ type: 'exodus:context.request' }, '*'); } catch(_) {}
 </script>
 </body>
 </html>

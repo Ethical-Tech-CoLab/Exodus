@@ -25,3 +25,5 @@ evacuation_risk.db
 # Upstream sources for the behavioral / routes sims — not part of the
 # canonical Exodus deployment. These are kept locally as nested git repos.
 legacy/
+.vercel
+.env*
