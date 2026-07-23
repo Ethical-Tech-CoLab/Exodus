@@ -380,7 +380,27 @@ document.getElementById('srcgrid').innerHTML = SOURCES.map(s=>`
 /* ---------- Detail drawer: live Tavily news + ACLED timeline ---------- */
 const drawer=document.getElementById('drawer');
 function closeDetail(){ drawer.classList.remove('open'); }
-function esc(s){ return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+// Escapes quotes as well as angle brackets: several call sites below interpolate
+// into quoted attributes (href=), where escaping only & < > still allows a `"`
+// to close the attribute and inject an event handler. String() rather than
+// (s||'') so a 0 or false renders as itself instead of an empty string.
+function esc(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+  ));
+}
+// esc() cannot make a URL safe: it does not touch the scheme, so a
+// `javascript:` value from the news/ACLED backend would still be a live sink in
+// href. Only http(s) survives; anything else yields '' and the caller renders
+// unlinked text.
+function safeUrl(u){
+  const s = String(u ?? '').trim();
+  if(!s) return '';
+  try{
+    const p = new URL(s, window.location.origin);
+    return (p.protocol === 'http:' || p.protocol === 'https:') ? esc(p.href) : '';
+  }catch(_){ return ''; }
+}
 function fmtDate(s){ if(!s) return ''; const d=new Date(s); return isNaN(d)?s:d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}); }
 
 async function openDetail(crisis,country,informIdx,eii){
@@ -430,8 +450,9 @@ function renderDetail(d){
     h+='<h4>🟢 Live developments — Tavily</h4>';
     if(t.answer) h+=`<div class="ans">${esc(t.answer)}</div>`;
     (t.items||[]).forEach(it=>{
-      h+=`<div class="news"><a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title)}</a>
-        <div class="m">${esc(it.source||'')}${it.date?' · '+fmtDate(it.date):''}</div>
+      const u=safeUrl(it.url), title=esc(it.title);
+      h+=`<div class="news">${u?`<a href="${u}" target="_blank" rel="noopener noreferrer">${title}</a>`:`<span>${title}</span>`}
+        <div class="m">${esc(it.source||'')}${it.date?' · '+esc(fmtDate(it.date)):''}</div>
         ${it.snippet?`<p>${esc(it.snippet)}…</p>`:''}</div>`;
     });
     if(!(t.items||[]).length) h+='<p style="font-size:12.5px;color:var(--ex-muted)">No recent items returned.</p>';
@@ -463,7 +484,10 @@ function renderDetail(d){
     if(dated.length){
       h+='<h4>🕒 Narrative timeline — news-derived</h4>';
       h+='<div style="font-size:11px;color:var(--ex-muted);margin-bottom:8px">Recent reporting in chronological order'+(a&&a.months&&a.months.length?' (qualitative layer over the ACLED counts above)':' — connect ACLED for structured event counts')+'.</div>';
-      h+='<ul class="tl">'+dated.map(it=>`<li><div class="d">${fmtDate(it.date)} · ${esc(it.source||'')}</div><a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title)}</a></li>`).join('')+'</ul>';
+      h+='<ul class="tl">'+dated.map(it=>{
+        const u=safeUrl(it.url), title=esc(it.title);
+        return `<li><div class="d">${esc(fmtDate(it.date))} · ${esc(it.source||'')}</div>${u?`<a href="${u}" target="_blank" rel="noopener noreferrer">${title}</a>`:`<span>${title}</span>`}</li>`;
+      }).join('')+'</ul>';
     }
   }
   if(d.cached) h+='<div style="font-size:10.5px;color:var(--ex-muted);margin-top:10px;text-align:right">⟳ cached (≤6h) — add <code>&nocache=1</code> to force refresh</div>';

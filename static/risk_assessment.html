@@ -1547,6 +1547,28 @@ let currentLayer1 = 0;
 // ====================================================
 function v(id){ return document.getElementById(id); }
 
+// ====================================================
+// XSS guards
+// ====================================================
+// Three sinks on this page interpolate untrusted values into innerHTML or into
+// a document.write()n report: GDELT article data (third-party API), snapshot
+// names (attacker-plantable via localStorage and persisted across reloads), and
+// the free-text Location field. esc() escapes HTML; safeUrl() allowlists
+// http(s) so javascript:/data: URLs can never reach an href.
+function esc(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+  ));
+}
+function safeUrl(u){
+  const s = String(u ?? '').trim();
+  if(!s) return '';
+  try{
+    const p = new URL(s, window.location.origin);
+    return (p.protocol === 'http:' || p.protocol === 'https:') ? esc(p.href) : '';
+  }catch(_){ return ''; }
+}
+
 function getCredWeight(fieldId, baseWeight) {
   const sel = document.querySelector(`.src-cred[data-field="${fieldId}"]`);
   const mult = sel ? parseFloat(sel.value) : 0.9;
@@ -2365,10 +2387,16 @@ function exportAssessment() {
   const ihlArts = getIHLTriggers(currentEndangerment);
   const analogues = findSimilarCases(currentLayer1, currentZone, currentRoute, currentDest);
 
-  const inputRows = Object.entries(inp).map(([k,vv])=>`<tr><td>${k}</td><td>${vv}</td></tr>`).join('');
+  // Every value below is escaped before it reaches the report markup. The
+  // report is handed to document.write() on an about:blank popup, which
+  // inherits this page's origin — so an unescaped `</title><script>…` in the
+  // free-text Location field would execute same-origin, against the ACLED
+  // credentials this page keeps in localStorage.
+  const inputRows = Object.entries(inp).map(([k,vv])=>`<tr><td>${esc(k)}</td><td>${esc(vv)}</td></tr>`).join('');
 
   const reportHTML = `<!DOCTYPE html><html><head>
-    <title>CERAI Assessment Report — ${loc} — ${timestamp}</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+    <title>CERAI Assessment Report — ${esc(loc)} — ${esc(timestamp)}</title>
     <style>
       body{font-family:sans-serif;max-width:900px;margin:40px auto;padding:20px;color:#1a1a2e;line-height:1.6}
       h1{color:#7b2d8b;margin-bottom:4px} h2{color:#333;border-bottom:2px solid #ccc;padding-bottom:4px;margin-top:24px}
@@ -2380,33 +2408,33 @@ function exportAssessment() {
       .panel-a{border-left:4px solid #7b52d4} .panel-b{border-left:4px solid #e67e22} .panel-c{border-left:4px solid #1abc9c}
     </style></head><body>
     <h1>CERAI Assessment Report</h1>
-    <p><strong>Location:</strong> ${loc} &nbsp;&nbsp; <strong>Generated:</strong> ${timestamp}</p>
+    <p><strong>Location:</strong> ${esc(loc)} &nbsp;&nbsp; <strong>Generated:</strong> ${esc(timestamp)}</p>
     <p><strong>Assessment Confidence:</strong> ${calcConfidence().pct}% (${calcConfidence().filled} of ${calcConfidence().total} fields populated)</p>
 
     <h2>Endangerment Assessment — Dimension 1</h2>
     <div class="panel-box panel-a">
-      <div><span class="score-box" style="background:#7b2d8b22;color:#7b2d8b">${currentEndangerment}%</span> <strong>${eLabel}</strong></div>
+      <div><span class="score-box" style="background:#7b2d8b22;color:#7b2d8b">${currentEndangerment}%</span> <strong>${esc(eLabel)}</strong></div>
       <p style="margin-top:8px">Endangerment represents the risk to civilian life if the population remains in place. Score calculated using geometric mean of Dimension 1 (objective threat conditions) modified by Dimension 3 (vulnerability multiplier: ${currentMultiplier.toFixed(2)}×).</p>
       <h3>IHL Obligations Triggered</h3>
-      ${ihlArts.map(a=>`<span class="badge" style="background:#7b2d8b22;color:#7b2d8b">${a}</span>`).join('')}
-      <p style="margin-top:8px">${getIHLText(currentEndangerment)}</p>
+      ${ihlArts.map(a=>`<span class="badge" style="background:#7b2d8b22;color:#7b2d8b">${esc(a)}</span>`).join('')}
+      <p style="margin-top:8px">${esc(getIHLText(currentEndangerment))}</p>
     </div>
 
     <h2>Feasibility Assessment — Dimension 2</h2>
     <div class="panel-box panel-b">
       <p><strong>Zone Exit Conditions:</strong> ${Math.round(currentZone)}% &nbsp; <strong>Route Conditions:</strong> ${Math.round(currentRoute)}% &nbsp; <strong>Protection at Destination:</strong> ${Math.round(currentDest)}%</p>
-      <p><strong>Combined Feasibility:</strong> ${currentFeasibility}% (${fLabel})</p>
+      <p><strong>Combined Feasibility:</strong> ${currentFeasibility}% (${esc(fLabel)})</p>
       <p>Feasibility is the geometric mean of the three sub-gauges, adjusted by the vulnerability multiplier. Higher feasibility indicates evacuation is operationally possible under current conditions.</p>
     </div>
 
     <h2>Decision Support Briefing</h2>
     <div class="panel-box panel-c">
-      <p>${v('brief-summary')?v('brief-summary').textContent:''}</p>
-      <p><strong>Gap Analysis:</strong> ${v('brief-gap')?v('brief-gap').textContent:''}</p>
+      <p>${esc(v('brief-summary')?v('brief-summary').textContent:'')}</p>
+      <p><strong>Gap Analysis:</strong> ${esc(v('brief-gap')?v('brief-gap').textContent:'')}</p>
     </div>
 
     <h2>Historical Analogues</h2>
-    ${analogues.map(c=>`<p><strong>${c.name} (${c.year})</strong> — Ground truth risk: ${c.groundTruthRisk}% — ${c.outcome}</p>`).join('')}
+    ${analogues.map(c=>`<p><strong>${esc(c.name)} (${esc(c.year)})</strong> — Ground truth risk: ${esc(c.groundTruthRisk)}% — ${esc(c.outcome)}</p>`).join('')}
 
     <h2>Input Values</h2>
     <table><tr><th>Variable</th><th>Value</th></tr>${inputRows}</table>
@@ -2451,9 +2479,9 @@ function showSnapshotList() {
       const eSign = diffE>=0?'+':''; const fSign = diffF>=0?'+':'';
       return `<div class="snapshot-item">
         <div>
-          <strong style="color:var(--text)">${s.name}</strong>
-          <span style="color:var(--text2);font-size:.68rem;margin-left:6px">${dt}</span><br>
-          <span style="font-size:.7rem;color:var(--text2)">E:${s.endangerment}% F:${s.feasibility}% &nbsp; vs current: E${eSign}${diffE}% F${fSign}${diffF}%</span>
+          <strong style="color:var(--text)">${esc(s.name)}</strong>
+          <span style="color:var(--text2);font-size:.68rem;margin-left:6px">${esc(dt)}</span><br>
+          <span style="font-size:.7rem;color:var(--text2)">E:${esc(s.endangerment)}% F:${esc(s.feasibility)}% &nbsp; vs current: E${eSign}${diffE}% F${fSign}${diffF}%</span>
         </div>
         <button class="snapshot-del" onclick="deleteSnapshot(${i})">&#215;</button>
       </div>`;
@@ -2520,16 +2548,24 @@ async function fetchGDELT() {
     const r = await fetch(url);
     const d = await r.json();
     if (d.articles && d.articles.length > 0) {
-      el.innerHTML = d.articles.slice(0,8).map(a => `
+      // Every field below comes from the public GDELT API and is untrusted: a
+      // headline containing markup, a domain crafted to break out of its
+      // attribute, or a javascript: URL would otherwise execute in this page —
+      // same-origin against the ACLED credentials held in localStorage.
+      el.innerHTML = d.articles.slice(0,8).map(a => {
+        const u = safeUrl(a.url);
+        const title = esc(a.title||'[no title]');
+        return `
         <div class="gdelt-article">
-          <a href="${a.url}" target="_blank">${a.title||'[no title]'}</a>
-          <div class="gdelt-meta">${a.domain||''} &nbsp;·&nbsp; ${(a.seendate||'').substring(0,8)}</div>
-        </div>`).join('');
+          ${u ? `<a href="${u}" target="_blank" rel="noopener noreferrer">${title}</a>` : `<span>${title}</span>`}
+          <div class="gdelt-meta">${esc(a.domain||'')} &nbsp;·&nbsp; ${esc((a.seendate||'').substring(0,8))}</div>
+        </div>`;
+      }).join('');
     } else {
       el.innerHTML = '<div style="color:var(--text2);font-size:.75rem">No articles found. Try a different search term.</div>';
     }
   } catch(e) {
-    el.innerHTML = '<div style="color:var(--text2);font-size:.75rem">GDELT fetch failed. This may be a CORS issue — use server-side proxy in production. Error: '+e.message+'</div>';
+    el.innerHTML = '<div style="color:var(--text2);font-size:.75rem">GDELT fetch failed. This may be a CORS issue — use server-side proxy in production. Error: '+esc(e.message)+'</div>';
   }
 }
 
