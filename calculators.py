@@ -236,12 +236,16 @@ def calculate_cerai_scores(dims: Dict) -> Dict:
 
 # ─── Dimension defaults derived from INFORM severity ─────────────────────────
 
+# D3 runs the same direction as every other dimension: 1 = full consent from all
+# armed parties, 5 = active refusal or no valid authorization. Higher is worse.
+# Every consumer below assumes this — the composite weight, the confinement
+# modifier, the CERAI feasibility term and the coordination multiplier.
 _SEV_TO_DIMS = [
     {"d1_kinetic":1.0,"d2_vulnerability":1.5,"d3_political":3.0,"d4_logistics":2.0,"d5_destination":2.0,"d6_urgency":1.0,"d7_information":1.5},
-    {"d1_kinetic":2.0,"d2_vulnerability":2.5,"d3_political":2.5,"d4_logistics":2.5,"d5_destination":2.5,"d6_urgency":2.0,"d7_information":2.0},
-    {"d1_kinetic":3.0,"d2_vulnerability":3.0,"d3_political":2.5,"d4_logistics":3.0,"d5_destination":2.5,"d6_urgency":3.0,"d7_information":2.5},
-    {"d1_kinetic":4.0,"d2_vulnerability":3.5,"d3_political":2.5,"d4_logistics":3.5,"d5_destination":3.0,"d6_urgency":4.0,"d7_information":3.0},
-    {"d1_kinetic":5.0,"d2_vulnerability":4.0,"d3_political":1.5,"d4_logistics":4.0,"d5_destination":3.0,"d6_urgency":4.5,"d7_information":4.0},
+    {"d1_kinetic":2.0,"d2_vulnerability":2.5,"d3_political":3.5,"d4_logistics":2.5,"d5_destination":2.5,"d6_urgency":2.0,"d7_information":2.0},
+    {"d1_kinetic":3.0,"d2_vulnerability":3.0,"d3_political":3.5,"d4_logistics":3.0,"d5_destination":2.5,"d6_urgency":3.0,"d7_information":2.5},
+    {"d1_kinetic":4.0,"d2_vulnerability":3.5,"d3_political":3.5,"d4_logistics":3.5,"d5_destination":3.0,"d6_urgency":4.0,"d7_information":3.0},
+    {"d1_kinetic":5.0,"d2_vulnerability":4.0,"d3_political":4.5,"d4_logistics":4.0,"d5_destination":3.0,"d6_urgency":4.5,"d7_information":4.0},
 ]
 
 
