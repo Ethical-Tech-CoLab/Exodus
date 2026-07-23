@@ -237,7 +237,7 @@
       <div class="by">total cost of the remaining population staying in zone</div>
       <div style="margin-top:8px">
         <div class="row"><span class="k">Cost / day</span><span class="v" id="kStayDay">—</span></div>
-        <div class="row"><span class="k">Expected casualties</span><span class="v" id="kStayCas">—</span></div>
+        <div class="row"><span class="k">Deaths / injuries</span><span class="v" id="kStayCas">—</span></div>
         <div class="row"><span class="k">Conflict type</span><span class="v" id="kStayCT" style="font-size:.78rem">—</span></div>
       </div>
     </div>
@@ -246,9 +246,9 @@
       <div class="big" id="kEvacTot">—</div>
       <div class="by">grand total to move + shelter the population</div>
       <div style="margin-top:8px">
-        <div class="row"><span class="k">Per person · transport</span><span class="v" id="kEvacTpp">—</span></div>
-        <div class="row"><span class="k">Transport total</span><span class="v" id="kEvacTrn">—</span></div>
-        <div class="row"><span class="k">Shelter (period)</span><span class="v" id="kEvacShel">—</span></div>
+        <div class="row"><span class="k">Cost / person</span><span class="v" id="kEvacTpp">—</span></div>
+        <div class="row"><span class="k">Transport + fuel</span><span class="v" id="kEvacTrn">—</span></div>
+        <div class="row"><span class="k">Shelter</span><span class="v" id="kEvacShel">—</span></div>
       </div>
     </div>
   </div>
@@ -259,9 +259,9 @@
     <div class="res"><div class="k">Buses</div><div class="v" id="resBus">—</div></div>
     <div class="res"><div class="k">Ambulances</div><div class="v" id="resAmb">—</div></div>
     <div class="res"><div class="k">Drivers</div><div class="v" id="resDrv">—</div></div>
-    <div class="res"><div class="k">Medics</div><div class="v" id="resMed">—</div></div>
+    <div class="res"><div class="k">Medical staff</div><div class="v" id="resMed">—</div></div>
     <div class="res"><div class="k">Security</div><div class="v" id="resSec">—</div></div>
-    <div class="res"><div class="k">Coordinators</div><div class="v" id="resCoo">—</div></div>
+    <div class="res"><div class="k">Total personnel</div><div class="v" id="resCoo">—</div></div>
     <div class="res"><div class="k">Water (L)</div><div class="v" id="resWat">—</div></div>
     <div class="res"><div class="k">Food (kg)</div><div class="v" id="resFood">—</div></div>
     <div class="res"><div class="k">Diesel (L)</div><div class="v" id="resFuel">—</div></div>
@@ -444,15 +444,15 @@ function applyUpstreamOverrides() {
     set('kEvacShel', fmt.usd(u.plan.evacShelter));
     const r = u.plan.resources;
     if (r && r.vehicles && r.personnel && r.supplies) {
-      set('resBus',  fmt.int(r.vehicles.buses));
+      set('resBus',  fmt.int(r.vehicles.standard_buses_50pax + r.vehicles.medical_buses_20pax));
       set('resAmb',  fmt.int(r.vehicles.ambulances));
       set('resDrv',  fmt.int(r.personnel.drivers));
-      set('resMed',  fmt.int(r.personnel.medics));
+      set('resMed',  fmt.int(r.personnel.medical_staff + r.personnel.paramedics));
       set('resSec',  fmt.int(r.personnel.security));
-      set('resCoo',  fmt.int(r.personnel.coordinators));
-      set('resWat',  fmt.int(r.supplies.water_l));
-      set('resFood', fmt.int(r.supplies.food_kg));
-      set('resFuel', fmt.int(r.supplies.fuel_l));
+      set('resCoo',  fmt.int(r.personnel.total));
+      set('resWat',  fmt.int(r.supplies.water_liters_3days));
+      set('resFood', fmt.int(r.supplies.food_kg_3days));
+      set('resFuel', fmt.int(r.supplies.fuel_liters));
     }
     tagLens('ercf');
   }
@@ -564,33 +564,34 @@ function render(s) {
   document.getElementById('vRationale').textContent = s.recommendation.rationale;
 
   // Cost
-  document.getElementById('kStayTot').textContent = fmt.usd(s.staying_cost.total_cost);
-  document.getElementById('kStayDay').textContent = fmt.usd(s.staying_cost.cost_per_day);
-  document.getElementById('kStayCas').textContent = (s.staying_cost.expected_casualties || 0).toLocaleString();
-  document.getElementById('kStayCT').textContent  = s.staying_cost.conflict_type;
-  document.getElementById('kEvacTot').textContent = fmt.usd(s.remaining_cost.total_cost);
-  document.getElementById('kEvacTpp').textContent = fmt.usd(s.remaining_cost.transport_per_capita);
-  document.getElementById('kEvacTrn').textContent = fmt.usd(s.remaining_cost.transport_total);
-  document.getElementById('kEvacShel').textContent= fmt.usd(s.remaining_cost.shelter_total);
+  const st = s.staying_cost.totals, sp = s.staying_cost.parameters;
+  document.getElementById('kStayTot').textContent = fmt.usd(st.financial_usd);
+  document.getElementById('kStayDay').textContent = fmt.usd(st.financial_usd / sp.days);
+  document.getElementById('kStayCas').textContent = `${Math.round(st.deaths).toLocaleString()} / ${Math.round(st.injuries).toLocaleString()}`;
+  document.getElementById('kStayCT').textContent  = sp.conflict_type;
+  document.getElementById('kEvacTot').textContent = fmt.usd(s.resources.summary.total_cost_usd);
+  document.getElementById('kEvacTpp').textContent = fmt.usd(s.resources.summary.cost_per_person_planned_usd);
+  document.getElementById('kEvacTrn').textContent = fmt.usd(s.resources.costs_usd.transport + s.resources.costs_usd.fuel);
+  document.getElementById('kEvacShel').textContent= fmt.usd(s.resources.costs_usd.shelter);
 
   // Resources
-  document.getElementById('resBus').textContent  = fmt.int(s.resources.vehicles.buses);
+  document.getElementById('resBus').textContent  = fmt.int(s.resources.vehicles.standard_buses_50pax + s.resources.vehicles.medical_buses_20pax);
   document.getElementById('resAmb').textContent  = fmt.int(s.resources.vehicles.ambulances);
   document.getElementById('resDrv').textContent  = fmt.int(s.resources.personnel.drivers);
-  document.getElementById('resMed').textContent  = fmt.int(s.resources.personnel.medics);
+  document.getElementById('resMed').textContent  = fmt.int(s.resources.personnel.medical_staff + s.resources.personnel.paramedics);
   document.getElementById('resSec').textContent  = fmt.int(s.resources.personnel.security);
-  document.getElementById('resCoo').textContent  = fmt.int(s.resources.personnel.coordinators);
-  document.getElementById('resWat').textContent  = fmt.int(s.resources.supplies.water_l);
-  document.getElementById('resFood').textContent = fmt.int(s.resources.supplies.food_kg);
-  document.getElementById('resFuel').textContent = fmt.int(s.resources.supplies.fuel_l);
+  document.getElementById('resCoo').textContent  = fmt.int(s.resources.personnel.total);
+  document.getElementById('resWat').textContent  = fmt.int(s.resources.supplies.water_liters_3days);
+  document.getElementById('resFood').textContent = fmt.int(s.resources.supplies.food_kg_3days);
+  document.getElementById('resFuel').textContent = fmt.int(s.resources.supplies.fuel_liters);
 
   // Analogues
   document.getElementById('anaList').innerHTML = (s.analogues || []).map(a => `
     <div class="ana">
-      <div class="yr">${a.year} · ${a.country}</div>
-      <div class="ttl">${a.case}</div>
-      <div class="m">Lvl ${a.ercf_level} · ${fmt.int(a.population_at_risk)} at risk · ${fmt.int(a.evacuated)} evacuated · ${a.duration_days}d</div>
-      <div class="obs"><b>Outcome</b>${a.outcomes}</div>
+      <div class="yr">${a.year} · ${a.conflict_type}</div>
+      <div class="ttl">${a.name}</div>
+      <div class="m">Lvl ${a.risk_level} · ${fmt.int(a.population_at_risk)} at risk · ${fmt.int(a.evacuated_count)} evacuated · ${a.duration_days}d</div>
+      <div class="obs"><b>Lessons</b>${(a.key_lessons || []).join(' · ')}</div>
     </div>`).join('') || '<div style="color:var(--muted);font-style:italic;font-size:.78rem">No close analogues in dataset.</div>';
 
   // Overlay live values from upstream models so the final brief reflects

@@ -181,9 +181,9 @@
       <div class="stat"><div class="k">Buses</div><div id="rBuses" class="v">—</div></div>
       <div class="stat"><div class="k">Ambulances</div><div id="rAmb" class="v">—</div></div>
       <div class="stat"><div class="k">Drivers</div><div id="rDrv" class="v">—</div></div>
-      <div class="stat"><div class="k">Medics</div><div id="rMed" class="v">—</div></div>
+      <div class="stat"><div class="k">Medical staff</div><div id="rMed" class="v">—</div></div>
       <div class="stat"><div class="k">Security</div><div id="rSec" class="v">—</div></div>
-      <div class="stat"><div class="k">Coordinators</div><div id="rCoo" class="v">—</div></div>
+      <div class="stat"><div class="k">Total personnel</div><div id="rCoo" class="v">—</div></div>
     </div>
     <table>
       <tr><th>Water</th><td class="n"><span id="rWater">—</span> L</td></tr>
@@ -197,7 +197,7 @@
     <div class="gauge">
       <div class="stat"><div class="k">Daily (USD)</div><div id="sDay" class="v">—</div></div>
       <div class="stat"><div class="k">Total over period</div><div id="sTot" class="v big">—</div></div>
-      <div class="stat"><div class="k">Expected casualties</div><div id="sCas" class="v">—</div></div>
+      <div class="stat"><div class="k">Deaths / injuries</div><div id="sCas" class="v">—</div></div>
       <div class="stat"><div class="k">Conflict type</div><div id="sCT" class="v" style="font-size:.92rem">—</div></div>
     </div>
   </div>
@@ -205,9 +205,9 @@
   <div class="card">
     <div class="card-h"><div class="t">Cost of evacuating</div></div>
     <div class="gauge">
-      <div class="stat"><div class="k">Transport / person</div><div id="eTpp" class="v">—</div></div>
-      <div class="stat"><div class="k">Transport total</div><div id="eTot" class="v">—</div></div>
-      <div class="stat"><div class="k">Shelter total</div><div id="eShel" class="v">—</div></div>
+      <div class="stat"><div class="k">Cost / person</div><div id="eTpp" class="v">—</div></div>
+      <div class="stat"><div class="k">Transport + fuel</div><div id="eTot" class="v">—</div></div>
+      <div class="stat"><div class="k">Shelter</div><div id="eShel" class="v">—</div></div>
       <div class="stat"><div class="k">Grand total</div><div id="eGrand" class="v big">—</div></div>
     </div>
   </div>
@@ -315,15 +315,15 @@ async function calculateAll() {
       distance_km: f.distance_km, risk_level: risk.risk_level,
       d2_mobility: f.d2_vulnerability, terrain: f.terrain,
     });
-    document.getElementById('rBuses').textContent = fmt.int(res.vehicles.buses);
+    document.getElementById('rBuses').textContent = fmt.int(res.vehicles.standard_buses_50pax + res.vehicles.medical_buses_20pax);
     document.getElementById('rAmb').textContent   = fmt.int(res.vehicles.ambulances);
     document.getElementById('rDrv').textContent   = fmt.int(res.personnel.drivers);
-    document.getElementById('rMed').textContent   = fmt.int(res.personnel.medics);
+    document.getElementById('rMed').textContent   = fmt.int(res.personnel.medical_staff + res.personnel.paramedics);
     document.getElementById('rSec').textContent   = fmt.int(res.personnel.security);
-    document.getElementById('rCoo').textContent   = fmt.int(res.personnel.coordinators);
-    document.getElementById('rWater').textContent = fmt.int(res.supplies.water_l);
-    document.getElementById('rFood').textContent  = fmt.int(res.supplies.food_kg);
-    document.getElementById('rFuel').textContent  = fmt.int(res.supplies.fuel_l);
+    document.getElementById('rCoo').textContent   = fmt.int(res.personnel.total);
+    document.getElementById('rWater').textContent = fmt.int(res.supplies.water_liters_3days);
+    document.getElementById('rFood').textContent  = fmt.int(res.supplies.food_kg_3days);
+    document.getElementById('rFuel').textContent  = fmt.int(res.supplies.fuel_liters);
 
     const stay = await post('/api/calculate/staying-cost', {
       population: f.population, risk_level: risk.risk_level, days: f.days,
@@ -331,10 +331,12 @@ async function calculateAll() {
       remaining_pct: f.remaining_pct,
       conflict_type: ({1:"urban_siege",2:"enclave",3:"city_conflict",4:"regional",5:"auto"})[f.conflict_pattern],
     });
-    document.getElementById('sDay').textContent = fmt.usd(stay.cost_per_day);
-    document.getElementById('sTot').textContent = fmt.usd(stay.total_cost);
-    document.getElementById('sCas').textContent = stay.expected_casualties.toLocaleString();
-    document.getElementById('sCT').textContent  = stay.conflict_type;
+    const stayTotal = stay.totals.financial_usd;
+    const stayCas   = Math.round(stay.totals.deaths + stay.totals.injuries);
+    document.getElementById('sDay').textContent = fmt.usd(stayTotal / f.days);
+    document.getElementById('sTot').textContent = fmt.usd(stayTotal);
+    document.getElementById('sCas').textContent = `${Math.round(stay.totals.deaths).toLocaleString()} / ${Math.round(stay.totals.injuries).toLocaleString()}`;
+    document.getElementById('sCT').textContent  = stay.parameters.conflict_type;
 
     const evac = await post('/api/calculate/remaining-cost', {
       population: f.population, vulnerable_pct: f.vulnerable_pct,
@@ -342,10 +344,10 @@ async function calculateAll() {
       d1: f.d1_kinetic, d2: f.d2_vulnerability, d3: f.d3_political, d4: f.d4_logistics,
       d5: f.d5_destination, d6: f.d6_urgency, d7: f.d7_information,
     });
-    document.getElementById('eTpp').textContent  = fmt.usd(evac.transport_per_capita);
-    document.getElementById('eTot').textContent  = fmt.usd(evac.transport_total);
-    document.getElementById('eShel').textContent = fmt.usd(evac.shelter_total);
-    document.getElementById('eGrand').textContent= fmt.usd(evac.total_cost);
+    document.getElementById('eTpp').textContent  = fmt.usd(res.summary.cost_per_person_planned_usd);
+    document.getElementById('eTot').textContent  = fmt.usd(res.costs_usd.transport + res.costs_usd.fuel);
+    document.getElementById('eShel').textContent = fmt.usd(res.costs_usd.shelter);
+    document.getElementById('eGrand').textContent= fmt.usd(res.summary.total_cost_usd);
 
     // Publish ERCF state for the final Brief synthesis to read
     try {
@@ -363,14 +365,15 @@ async function calculateAll() {
         remainingPct:     f.remaining_pct,
         terrain:          f.terrain,
         conflictPattern:  f.conflict_pattern,
-        stayPerDay:       stay.cost_per_day,
-        stayTotal:        stay.total_cost,
-        stayCasualties:   stay.expected_casualties,
-        conflictType:     stay.conflict_type,
-        evacTotal:        evac.total_cost,
-        evacTransport:    evac.transport_total,
-        evacShelter:      evac.shelter_total,
-        evacPerCapita:    evac.transport_per_capita,
+        stayPerDay:       stayTotal / f.days,
+        stayTotal:        stayTotal,
+        stayCasualties:   stayCas,
+        conflictType:     stay.parameters.conflict_type,
+        evacTotal:        res.summary.total_cost_usd,
+        evacTransport:    res.costs_usd.transport + res.costs_usd.fuel,
+        evacShelter:      res.costs_usd.shelter,
+        evacPerCapita:    res.summary.cost_per_person_planned_usd,
+        remainAssistTotal: evac.costs_usd.total,
         resources:        res,
         updatedAt:        new Date().toISOString(),
       }));
@@ -456,8 +459,8 @@ async function loadHistorical() {
     const top = items.slice(0, 6);
     document.getElementById('hist').innerHTML = top.map(h => `
       <div style="border-bottom:1px solid var(--border);padding:6px 0;font-size:.78rem">
-        <div style="font-weight:600">${h.year} · ${h.country} — ${h.case}</div>
-        <div style="color:var(--muted);font-size:.7rem">Lvl ${h.ercf_level} · ${fmt.int(h.population_at_risk)} at risk · ${fmt.int(h.evacuated)} evacuated</div>
+        <div style="font-weight:600">${h.year} — ${h.name}</div>
+        <div style="color:var(--muted);font-size:.7rem">Lvl ${h.risk_level} · ${fmt.int(h.population_at_risk)} at risk · ${fmt.int(h.evacuated_count)} evacuated</div>
       </div>`).join("");
   } catch {}
 }

@@ -175,6 +175,9 @@ def fetch_active_crises() -> List[dict]:
     return _store(key, result)
 
 
+# ─── Combined country view ────────────────────────────────────────────────────
+
+
 def get_country_data(iso3: str) -> dict:
     """Call all four endpoints, filter by ISO3, return combined dict.
 
@@ -188,6 +191,9 @@ def get_country_data(iso3: str) -> dict:
         "risks":  [r for r in fetch_risk_radar()          if _iso3_matches(r["iso3"], iso3)],
         "crises": [r for r in fetch_active_crises()       if _iso3_matches(r["iso3"], iso3)],
     }
+
+
+# ─── Field normalisation ──────────────────────────────────────────────────────
 
 
 def _normalise_iso3(field) -> str:

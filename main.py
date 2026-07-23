@@ -18,7 +18,7 @@ from typing import Optional
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -42,9 +42,12 @@ from database import (
 )
 from historical_data import HISTORICAL_CASES
 from live_data import (
+    SESSION_USAGE,
     crisis_detail,
+    earth_image,
     gdelt_articles,
     open_meteo_current,
+    usage_read,
 )
 from world_risk import NUM_TO_ISO3, get_all_risk_levels, get_risk_by_iso3
 
@@ -174,7 +177,8 @@ async def health():
             "acaps":     bool(os.environ.get("ACAPS_API_KEY")),
             "anthropic": bool(os.environ.get("ANTHROPIC_API_KEY")),
             "tavily":    bool(os.environ.get("TAVILY_API_KEY")),
-            "acled":     bool(os.environ.get("ACLED_API_KEY") and os.environ.get("ACLED_EMAIL")),
+            "acled":     bool(os.environ.get("ACLED_EMAIL") and os.environ.get("ACLED_PASSWORD")),
+            "nasa":      bool(os.environ.get("NASA_API_KEY")),
         },
         "countries_tracked": len(get_all_risk_levels()),
     }
@@ -322,9 +326,38 @@ async def api_detail(
     crisis:  str = Query(""),
     country: str = Query(""),
     nocache: bool = Query(False),
+    days:    int = Query(60, ge=1, le=365),
+    place:   str = Query(""),
+    roads:   str = Query("1"),
 ):
+    want_roads = roads not in ("0", "false", "no")
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, crisis_detail, crisis, country, nocache)
+    return await loop.run_in_executor(
+        None, lambda: crisis_detail(crisis, country, nocache, days, place, want_roads))
+
+
+@app.get("/api/usage")
+async def api_usage():
+    """Report API spend so the user can watch their Tavily credits."""
+    return {
+        "total":   usage_read(),      # cumulative across all runs (persisted)
+        "session": SESSION_USAGE,     # since this server process started
+        "note": "Tavily basic search = 1 API credit. A detail call spends 2 "
+                "(news + road access); add ?roads=0 to spend 1. Cached results "
+                "(≤6h) cost 0. Check your monthly limit at app.tavily.com.",
+    }
+
+
+@app.get("/api/earth-image")
+async def api_earth_image(lat: float, lon: float, dim: str = Query("0.5")):
+    """Proxy NASA's keyed Earth Imagery API — key stays server-side."""
+    loop = asyncio.get_event_loop()
+    data, err = await loop.run_in_executor(None, earth_image, lat, lon, dim)
+    if err:
+        payload, status = err
+        return JSONResponse(payload, status_code=status)
+    return Response(content=data, media_type="image/png",
+                    headers={"Cache-Control": "public, max-age=604800"})
 
 
 # ─── CERAI live feeds (GDELT keyless + Open-Meteo) ───────────────────────────
@@ -454,15 +487,20 @@ async def synthesis(body: SynthesisReq):
         body.terrain,
     )
 
-    # 4. Recommendation
-    rec = _recommend(ercf["risk_level"], stay["total_cost"], evac["total_cost"],
-                     stay["expected_casualties"], cerai["feasibility"])
-    rec["cost_delta_usd"]       = round(stay["total_cost"] - evac["total_cost"], 2)
-    rec["casualties_prevented"] = stay["expected_casualties"]
+    # 4. Recommendation — v6 model shapes: staying cost/toll from stay["totals"],
+    # evacuation operation cost from the resources summary (remaining-cost now
+    # prices the in-situ assistance stream, not the evacuation itself).
+    stay_total = stay["totals"]["financial_usd"]
+    casualties = stay["totals"]["deaths"] + stay["totals"]["injuries"]
+    evac_total = res["summary"]["total_cost_usd"]
+    rec = _recommend(ercf["risk_level"], stay_total, evac_total,
+                     casualties, cerai["feasibility"])
+    rec["cost_delta_usd"]       = round(stay_total - evac_total, 2)
+    rec["casualties_prevented"] = round(casualties)
 
     # 5. Top historical analogues at this risk level (or one below)
     target_lvl = ercf["risk_level"]
-    matched = [c for c in HISTORICAL_CASES if c["ercf_level"] in (target_lvl, max(0, target_lvl - 1))]
+    matched = [c for c in HISTORICAL_CASES if c["risk_level"] in (target_lvl, max(0, target_lvl - 1))]
     matched.sort(key=lambda c: abs(c["population_at_risk"] - body.population))
     analogues = matched[:4]
 

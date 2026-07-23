@@ -64,9 +64,11 @@ python main.py             # http://localhost:8000
 
 ## Credits
 
-- **EII** — Ethical Tech CoLab · github.com/Ethical-Tech-CoLab/evacmodel
-- **ERCF** — yagorocha-web/ercf
-- **CERAI** — alanarobertson/evac-ai-project-2-
+- **EII** — github.com/Ethical-Tech-CoLab/evacuation-inform-index-carolina
+- **ERCF** — github.com/Ethical-Tech-CoLab/ercf
+- **CERAI** — github.com/Ethical-Tech-CoLab/CERAI_AR
+- **Route simulator** — github.com/Ethical-Tech-CoLab/India-EvacSimulation
+- **Behavioral simulator** — github.com/Ethical-Tech-CoLab/Evac-Sim-Melanie
 - Data: ACAPS INFORM Severity Index (April 2026), ACLED, GDELT 2.0, Open-Meteo
 
 Unified by NYU Ethical CoLab.
